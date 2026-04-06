@@ -1,4 +1,4 @@
-# cursor-umo-brain (plugin package)
+# umo-brain (plugin package)
 
 Shared plugin package for both Cursor and Codex.
 

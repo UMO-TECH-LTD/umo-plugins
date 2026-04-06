@@ -1,4 +1,4 @@
-# cursor-umo-brain
+# umo-plugins
 
 DAVID agent harness for Cursor — organizational memory, MR review (four personas), GitLab.com via **`gitlab-cloud-umotech`** (`@zereight/mcp-gitlab`).
 
@@ -40,7 +40,7 @@ It is intentionally **tool-first** and **just-in-time**. Brain is treated as lon
 
 1. Open **Cursor**
 2. **Settings** → **Plugins** (or **Marketplace** / **Plugins** in the sidebar)
-3. Find **cursor-umo-brain** (or your team's marketplace bundle, e.g. **umo-cursor-plugins**)
+3. Find **umo-brain** (or your team's marketplace bundle, e.g. **umo-plugins**)
 4. **Install** / enable → **Developer: Reload Window** or restart Cursor  
 
 If it's not listed, ask your team how the plugin is shipped.
