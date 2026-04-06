@@ -34,6 +34,8 @@
       "Run MR review personas and summarize findings.",
       "Check compliance and security risks in this change."
     ],
-    "brandColor": "#1F6FEB"
+    "brandColor": "#1F6FEB",
+    "composerIcon": "./assets/umo.png",
+    "logo": "./assets/umo.png"
   }
 }
