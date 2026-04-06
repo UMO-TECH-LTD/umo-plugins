@@ -1,0 +1,10 @@
+---
+description: Quality loop — run lint and typecheck after each implementation step until clean.
+alwaysApply: true
+---
+
+# Quality Loop
+
+After writing or modifying source files, run the relevant quality checks immediately
+and fix errors before moving to the next task. Load the `quality-loop` skill for the
+full workflow and common remediation patterns.

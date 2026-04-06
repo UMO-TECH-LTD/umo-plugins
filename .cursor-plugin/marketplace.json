@@ -12,6 +12,11 @@
       "name": "umo-brain",
       "source": "./plugins/umo-brain",
       "description": "DAVID agent harness — brain-first memory protocol, GitLab integration"
+    },
+    {
+      "name": "umo-engineering-standards",
+      "source": "./plugins/umo-engineering-standards",
+      "description": "Reusable engineering standards — quality loops, TDD, and deterministic dependency management"
     }
   ]
 }
