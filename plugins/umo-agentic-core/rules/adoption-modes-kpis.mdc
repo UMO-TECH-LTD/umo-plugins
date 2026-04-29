@@ -1,0 +1,26 @@
+---
+description: Adoption modes and KPI reporting guidance — observe before assist, evidence, and enforcement.
+alwaysApply: true
+---
+
+# Adoption Modes And KPIs
+
+Repos move through staged adoption:
+
+- Observe: report gaps only.
+- Assist: provide commands and setup guidance without blocking.
+- Evidence: require evidence in closeout, no CI blocking.
+- Enforced: block missing required evidence after owner sign-off.
+
+No repo starts in enforced mode. Enforcement requires baseline metrics, false
+positive review, and owner sign-off.
+
+Core KPI reporting fields:
+
+- active plugin version;
+- adoption mode;
+- evidence presence;
+- bead or spec coverage;
+- memory recall feedback and valid memory writes;
+- eager token estimate;
+- false positive rate.

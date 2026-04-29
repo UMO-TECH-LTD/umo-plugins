@@ -1,0 +1,45 @@
+{
+  "name": "umo-sdlc",
+  "version": "0.3.0",
+  "description": "UMO SDLC v1 — doc bucket structure, design, lifecycle, and audit. Service buckets at services/<svc>/docs/ are spec-driven and anchored on PASSPORT.md (canonical service identity). Library buckets at repo root or in a domain repo are knowledge stores. Three skills: docs-setup, docs-lifecycle, docs-audit.",
+  "author": {
+    "name": "UMO Platform Team",
+    "email": "devops.tech.user@umo.business"
+  },
+  "keywords": [
+    "umo",
+    "umo-sdlc",
+    "service-docs",
+    "documentation",
+    "lifecycle",
+    "passport",
+    "service-anchor",
+    "adr",
+    "proposal",
+    "runbook",
+    "audit",
+    "spec-driven"
+  ],
+  "license": "UNLICENSED",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "UMO SDLC",
+    "shortDescription": "Standardize and audit service-scoped and library docs across UMO repos.",
+    "longDescription": "v1 of umo-sdlc owns documentation buckets. Service buckets at services/<svc>/docs/ are spec-driven and anchored on PASSPORT.md, which carries machine-readable identity (domain, teams, network dependencies, exposed contracts) and is the first file an agent reads when recalling service context. Library buckets at repo root or in a domain repo are knowledge stores. Both share the same building blocks (proposals, adr, guides, reference, incidents, archive). Three skills: docs-setup (bootstrap any bucket, create PASSPORT for service buckets), docs-lifecycle (every create/promote/archive action, including PASSPORT updates), docs-audit (validate an existing bucket and autofix safe issues, flags missing PASSPORT). AGENTS.md, beads, planning, memory, review, and KPIs are explicitly out of scope.",
+    "developerName": "UMO Platform Team",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Set up the docs bucket for this service.",
+      "Audit the docs structure here and autofix what's safe.",
+      "Update the PASSPORT — the network deps changed.",
+      "Write a proposal for this service."
+    ],
+    "brandColor": "#1F6FEB",
+    "composerIcon": "./assets/umo.png",
+    "logo": "./assets/umo.png"
+  }
+}

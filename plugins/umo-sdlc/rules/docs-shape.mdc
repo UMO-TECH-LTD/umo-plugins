@@ -1,0 +1,173 @@
+---
+description: Shape of managed docs in any bucket — service profile (spec-driven, with PASSPORT anchor) or library profile (knowledge store). Fires when files in any bucket are touched.
+globs:
+  - services/*/docs/**
+  - docs/**
+---
+
+# Docs Shape
+
+Every managed docs bucket follows this shape. Two profiles share most of
+their structure; differences are flagged with **(service only)** or
+**(library only)**.
+
+## Profile detection
+
+- `services/<svc>/docs/` → **service** profile.
+- `docs/` at repo root, or `docs/` in a separate domain repo → **library**
+  profile.
+
+## PASSPORT.md is the anchor (service only)
+
+In a service bucket, `PASSPORT.md` is the canonical service identity
+record and the **first** file an agent should read when recalling
+context for that service. Other docs in the bucket reference back to it.
+
+PASSPORT.md is required (an audit error if missing). It carries:
+
+- **YAML frontmatter at the top** — machine-readable identity:
+  `service`, `domain`, `teams`, `network_dependencies`,
+  `exposed_contracts`, plus deployment fields owned by the saas
+  passport tooling.
+- **Doc-meta header below the frontmatter** — same as every other
+  managed doc.
+- **Markdown body** — human-readable overview, deployment specs,
+  environment variables, infrastructure dependencies, mermaid
+  connection diagrams.
+
+When the bucket lives in `services/<svc>/docs/`, an agent that needs to
+understand or change the service should:
+
+1. Read `services/<svc>/docs/PASSPORT.md` (identity, deps, contracts).
+2. Read `services/<svc>/docs/README.md` (entry index).
+3. Read `services/<svc>/docs/spec.md` and `backlog.md` (in-flight work).
+4. Drill into `proposals/`, `adr/`, `guides/`, `reference/` as needed.
+
+## Layout
+
+```
+<bucket>/
+├── README.md           # overview + index, status: active                            (both)
+├── PASSPORT.md         # service identity anchor — YAML frontmatter + body          (service only)
+├── ROADMAP.md          # what's being built next (optional)                          (both)
+├── spec.md             # testable acceptance criteria (⏳ → ✅)                       (service only)
+├── backlog.md          # future work, ideas, deferred items                          (service only)
+├── adr/                # immutable accepted decisions, NNN-slug.md                   (both)
+├── proposals/          # designs, status: draft | decided                            (both)
+├── guides/             # operational knowledge, how-tos, runbooks                    (both)
+├── reference/          # contracts, schemas, env vars, API specs                     (both)
+├── incidents/          # postmortems, YYYY-MM-DD-slug.md (optional)                  (both)
+└── archive/            # superseded proposals, guides, reference (read-only)        (both)
+    ├── proposals/
+    ├── guides/
+    └── reference/
+```
+
+Do not create new top-level folders or files here. If a real need
+appears, write a proposal first. **Library buckets must not contain
+PASSPORT.md, spec.md, or backlog.md** — those are service-only artifacts.
+
+## Mandatory header on every managed doc
+
+```markdown
+<!-- doc-meta -->
+> **Status:** draft | active | accepted | superseded | archived
+> **Type:** overview | passport | roadmap | spec | backlog | proposal | adr | guide | reference | incident
+> **Owner:** <gitlab handle or team>
+> **Updated:** YYYY-MM-DD
+```
+
+For PASSPORT.md, the doc-meta header sits **after** the YAML frontmatter:
+
+```markdown
+---
+service: <name>
+domain: <domain>
+teams: [<team>]
+network_dependencies:
+  outbound: { ... }
+  inbound: [ ... ]
+exposed_contracts:
+  grpc: [ ... ]
+  nats: { publishes: [...], subscribes: [...] }
+  rest: { base: "", endpoints: [] }
+---
+<!-- doc-meta -->
+> **Status:** active
+> **Type:** passport
+> **Owner:** <team>
+> **Updated:** YYYY-MM-DD
+
+# <Service Name> Service Passport
+...
+```
+
+The plugin only checks YAML *parses* and the four doc-meta fields are
+present. Schema details for the passport YAML are owned by the saas
+passport tooling (`service-passport-agent-context` skill).
+
+Without the doc-meta header, a file in any bucket is not a managed doc.
+When creating or moving a doc, write the header. When updating one, bump
+`Updated`.
+
+## Naming
+
+| Folder / file | Pattern |
+|---------------|---------|
+| `adr/` | `NNN-slug.md` (zero-padded, e.g. `001-grpc-migration.md`) |
+| `incidents/` | `YYYY-MM-DD-slug.md` |
+| `proposals/`, `guides/`, `reference/`, `archive/**` | `kebab-case.md` |
+| Top-level | `README.md`, `PASSPORT.md`, `ROADMAP.md`, `spec.md`, `backlog.md` (fixed names) |
+
+## Lifecycle transitions
+
+| Type | Transitions | Notes |
+|------|-------------|-------|
+| **PASSPORT** *(service only)* | always `active`; rewritten on identity / deps / contracts change | bump `Updated`; never archived (a service either has one or doesn't exist) |
+| Spec items *(service only)* | `⏳` → `✅` | Each AC is a checkbox. Flip when done. Never delete completed items. |
+| Backlog items *(service only)* | bullet → `spec.md` | When work begins, move into `spec.md` with `⏳` markers. |
+| Proposal | `draft` → `decided` (paired ADR) | Once decided, link the ADR; stop editing the body. |
+| Proposal | `draft` → `archived` (move to `archive/proposals/`) | Leave a tombstone. |
+| ADR | `accepted` → `superseded by ADR-NNN` | Old ADR's body is immutable; only the status line is edited. |
+| Guide | `active` → `archived` (move to `archive/guides/`) | Retired guides keep their history accessible. |
+| Reference | drift → fix same day | Reference docs name their source file in code. |
+| Incident | append-only after creation | New findings appended with a timestamped section; existing sections never rewritten. |
+
+## Spec-driven workflow (service only)
+
+`spec.md` is the testable contract for what the service is delivering
+right now. Each AC is a checkbox with `⏳` (pending) or `✅` (done):
+
+```markdown
+- [ ] ⏳ POST /transactions returns 201 on valid payload
+- [x] ✅ POST /transactions returns 400 on missing currency
+```
+
+Workflow: pick from `backlog.md` → translate to checkbox AC in `spec.md`
+with `⏳` → implement → flip to `✅` → bump `Updated`. Non-trivial
+design choices become a proposal under `proposals/`, paired with an ADR
+when decided.
+
+## Forbidden
+
+- Creating a doc in any bucket without the doc-meta header.
+- Editing the body of an `accepted` ADR.
+- Editing files under `archive/` except to add a redirect.
+- Mixing types in a folder (e.g. ADRs in `proposals/`).
+- Cross-service docs in a single service's bucket.
+- Library-bucket-specific artifacts (`PASSPORT.md`, `spec.md`,
+  `backlog.md`) appearing in a library bucket.
+- Service-specific content in a library bucket. If the doc describes a
+  single service, it belongs in `services/<svc>/docs/`.
+- Deleting completed (`✅`) AC from `spec.md` to "clean up".
+- Rewriting an `accepted` PASSPORT yaml frontmatter without bumping
+  `Updated` and reflecting the change in the markdown body.
+
+## Skills
+
+- `docs-setup` — bootstrap any bucket (asks profile, creates PASSPORT
+  for service buckets).
+- `docs-lifecycle` — every create / promote / supersede / archive
+  action, including PASSPORT updates.
+- `docs-audit` — validate an existing bucket and autofix safe issues;
+  flags missing PASSPORT for service buckets as an error.

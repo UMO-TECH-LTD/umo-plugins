@@ -5,9 +5,19 @@
     "email": "devops.tech.user@umo.business"
   },
   "metadata": {
-    "description": "UMO internal Cursor plugins — brain harness, organizational memory"
+    "description": "UMO internal Cursor plugins — agentic lifecycle, brain harness, organizational memory"
   },
   "plugins": [
+    {
+      "name": "umo-sdlc",
+      "source": "./plugins/umo-sdlc",
+      "description": "UMO SDLC v1 — doc bucket structure, design, lifecycle, and audit. Service buckets (services/<name>/docs/) are spec-driven and anchored on PASSPORT.md, the canonical service identity record. Library buckets (repo root or domain repo) are knowledge stores. Three skills: docs-setup, docs-lifecycle, docs-audit. No planning, memory, review, or KPI scope in v1."
+    },
+    {
+      "name": "umo-agentic-core",
+      "source": "./plugins/umo-agentic-core",
+      "description": "Core agentic delivery lifecycle — SDLC, planning with beads, memory, docs, quality evidence, review, closeout, adoption modes, and KPI reporting guidance"
+    },
     {
       "name": "umo-brain",
       "source": "./plugins/umo-brain",

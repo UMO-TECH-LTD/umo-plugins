@@ -1,0 +1,66 @@
+{
+  "name": "umo-agentic-core",
+  "version": "0.1.0",
+  "description": "Marketplace core for UMO agentic delivery: SDLC lifecycle, planning with beads, memory workflow, docs lifecycle, quality evidence, review protocol, closeout, adoption modes, and KPI reporting guidance.",
+  "author": {
+    "name": "UMO Platform Team",
+    "email": "devops.tech.user@umo.business"
+  },
+  "keywords": [
+    "umo",
+    "agentic-core",
+    "sdlc",
+    "planning",
+    "beads",
+    "memory",
+    "docs",
+    "quality",
+    "review",
+    "kpi"
+  ],
+  "license": "UNLICENSED",
+  "logo": "./assets/umo-agentic-core.svg",
+  "skills": "./skills/",
+  "umoComposition": {
+    "apiVersion": "umo.plugins/v1",
+    "core": true,
+    "precedence": 0,
+    "dependsOn": [],
+    "optionalDependsOn": [],
+    "owns": [
+      "sdlc-lifecycle",
+      "phase-transitions",
+      "planning",
+      "beads-planning-substrate",
+      "acceptance-criteria",
+      "dependency-rules",
+      "memory-workflow",
+      "docs-lifecycle",
+      "quality-evidence",
+      "review-protocol",
+      "closeout",
+      "adoption-modes",
+      "kpi-reporting-guidance",
+      "plugin-composition"
+    ],
+    "delegatesTo": {},
+    "validationRules": [
+      "non-core plugins must depend on umo-agentic-core",
+      "non-core plugins must delegate lifecycle, memory, planning, quality, review, and closeout surfaces to umo-agentic-core",
+      "no plugin may claim planning or beads-planning-substrate in v1",
+      "duplicate ownership surfaces fail validation unless one plugin delegates the surface",
+      "plugins may strengthen core invariants but must not weaken or replace them",
+      "generated reports must include active plugin names and versions"
+    ],
+    "adoptionModes": ["observe", "assist", "evidence", "enforced"],
+    "kpiFields": [
+      "plugin-version",
+      "adoption-mode",
+      "quality-evidence-present",
+      "memory-recall-feedback",
+      "memory-write-quality",
+      "eager-token-estimate",
+      "false-positive-rate"
+    ]
+  }
+}

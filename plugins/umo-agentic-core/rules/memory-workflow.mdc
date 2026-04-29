@@ -1,0 +1,19 @@
+---
+description: Core memory workflow — recall before work, feedback after recall, remember durable learnings.
+alwaysApply: true
+---
+
+# Memory Workflow
+
+Use organizational memory as long-term memory, not scratch space.
+
+Required flow:
+
+- Recall at session start and before major design decisions or unfamiliar code.
+- Give feedback on every recalled memory.
+- Recall again after repeated failures with the exact symptom or error.
+- Remember durable decisions, facts, patterns, mistakes, and achievements.
+- Include namespace, context, relevant files, and source task when writing memory.
+
+If memory tools are unavailable, report that explicitly and continue with local
+evidence. Do not pretend memory was read or saved.

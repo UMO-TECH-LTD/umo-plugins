@@ -1,0 +1,18 @@
+---
+description: Core SDLC lifecycle — research, design, plan, implement, verify, promote.
+alwaysApply: true
+---
+
+# SDLC Lifecycle
+
+Every agentic unit of work follows six phases:
+
+1. Research: recall prior context and read the authoritative docs/code.
+2. Design: choose an approach with trade-offs and owner-visible rationale.
+3. Plan: express acceptance criteria, dependencies, and evidence needs.
+4. Implement: change code and docs together when behavior changes.
+5. Verify: run quality evidence and review against the relevant protocol.
+6. Promote or close: record outcomes, memory, docs status, and active plugin versions.
+
+Short tasks may compress phases, but they must not skip planning evidence,
+quality evidence, review judgment, or closeout semantics.
