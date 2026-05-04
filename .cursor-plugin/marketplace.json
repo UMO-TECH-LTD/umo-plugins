@@ -11,7 +11,7 @@
     {
       "name": "umo-sdlc",
       "source": "./plugins/umo-sdlc",
-      "description": "UMO SDLC v1 — doc bucket structure, design, lifecycle, and audit. Service buckets (services/<name>/docs/) are spec-driven and anchored on PASSPORT.md, the canonical service identity record. Library buckets (repo root or domain repo) are knowledge stores. Three skills: docs-setup, docs-lifecycle, docs-audit. No planning, memory, review, or KPI scope in v1."
+      "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, and one compact docs skill with references/assets for setup, audit, and lifecycle."
     },
     {
       "name": "umo-agentic-core",

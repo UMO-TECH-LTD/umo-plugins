@@ -1,0 +1,43 @@
+{
+  "$schema": "https://umo.dev/schemas/service-catalog.v1.json",
+  "schema": "umo.service-catalog/v1",
+  "kind": "ServiceCatalog",
+  "metadata": {
+    "name": "<svc-name>",
+    "title": "<Service Name>",
+    "description": "<one sentence>",
+    "domain": "<domain>",
+    "lifecycle": "production",
+    "type": "<gateway|api|worker|frontend|library>",
+    "tags": []
+  },
+  "ownership": {
+    "team": "<team>",
+    "lead": "<handle>"
+  },
+  "runtime": {
+    "language": "<language>",
+    "framework": "<framework>",
+    "packageManager": "<package manager>",
+    "entrypoints": []
+  },
+  "deployment": {
+    "namespace": "<namespace>",
+    "clusters": [],
+    "ports": []
+  },
+  "interfaces": {
+    "provides": [],
+    "consumes": []
+  },
+  "operations": {
+    "healthcheck": null,
+    "runbook": null,
+    "dashboards": [],
+    "alerts": []
+  },
+  "agent": {
+    "readNext": [],
+    "sharpEdges": []
+  }
+}

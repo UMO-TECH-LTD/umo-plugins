@@ -1,69 +1,55 @@
 ---
-description: UMO docs live in scoped buckets — repo root, per-service, or domain repo. Each bucket is a memory store with one of two profiles (service = spec-driven with PASSPORT anchor, library = knowledge store).
+description: UMO docs live in scoped buckets - repo root, per-service, or domain repo. Service buckets are spec-driven and anchored by Markdown-first PASSPORT.md; library buckets are knowledge stores.
 alwaysApply: true
 ---
 
 # Doc Buckets
 
-UMO documentation is organized into bounded memory buckets. Each bucket
-is owned by a small group (a service maintainer, a domain owner) and
-managed independently. There is no cross-bucket source-of-truth coupling.
+UMO documentation is organized into bounded memory buckets. Each bucket is
+owned by a small group and maintained independently.
 
-## Bucket types
+## Bucket Types
 
 | Where | Bucket path | Profile | Purpose |
 |-------|-------------|---------|---------|
-| Per service | `services/<svc>/docs/` | service | spec-driven artifacts; PASSPORT.md is the anchor |
-| Monorepo root | `docs/` | library | technical cross-cutting reference, root-level ADRs |
-| Domain repo | a separate repo's `docs/` | library | business / domain knowledge (non-technical) |
+| Per service | `services/<svc>/docs/` | service | service entrypoint, spec, backlog, decisions, guides, references |
+| Monorepo root | `docs/` | library | cross-cutting technical reference and root-level ADRs |
+| Domain repo | a separate repo's `docs/` | library | domain knowledge |
 
-## Profiles
+## Service Bucket Contract
 
-- **Service profile** — spec-driven. Required: `README.md`, `PASSPORT.md`
-  (the anchor), `spec.md`, `backlog.md`. Optional: `ROADMAP.md`. Used per
-  service.
-- **Library profile** — knowledge store. Required: `README.md` only.
-  No `PASSPORT.md` / `spec.md` / `backlog.md` (the bucket is not a unit
-  of work and has no service identity).
+Required:
 
-Both profiles share: `adr/`, `proposals/`, `guides/`, `reference/`,
-`incidents/`, `archive/`.
+- `README.md`
+- `PASSPORT.md`
+- `spec.md`
+- `backlog.md`
+- `adr/`, `proposals/`, `guides/`, `reference/`, `incidents/`, `archive/`
 
-## PASSPORT.md is the service anchor
+`PASSPORT.md` is Markdown-first and is the first file humans and agents read
+for service work. Machine-readable facts live in
+`reference/service.catalog.json`.
 
-For any service work, **PASSPORT.md is the first file to read**. It
-holds the canonical service identity:
+## Library Bucket Contract
 
-- machine-readable YAML frontmatter (service, domain, teams,
-  network dependencies, exposed contracts);
-- doc-meta header (status, type=passport, owner, updated);
-- markdown body (overview, deployment, env vars, infra deps, mermaid
-  connection diagram).
+Required:
 
-Other docs in the bucket reference back to PASSPORT.md. Cross-service
-discovery (which services exist in a given domain, which exposed
-contracts they offer) is built by aggregating PASSPORTs.
+- `README.md`
+- `adr/`, `proposals/`, `guides/`, `reference/`, `incidents/`, `archive/`
 
-## Rules of thumb
+Forbidden in library buckets: `PASSPORT.md`, `spec.md`, `backlog.md`.
 
-- Cross-service or monorepo-wide content goes to the root `docs/`
-  library bucket, never inside one service's `docs/`.
-- Service-specific content goes to that service's `docs/`, never to the
-  root or to a sibling service.
-- `services/<svc>/AGENTS.md` (if present) is the auto-generated
-  agent-facing summary at the service root and is **not** in this
-  plugin's scope; it should reference `docs/PASSPORT.md` as the
-  authoritative source.
+## Rules of Thumb
 
-When editing files inside any `docs/`, the `docs-shape` rule fires
-automatically and defines the structure, mandatory header, naming, and
-lifecycle for the active profile.
+- Service-specific content goes in that service's docs bucket.
+- Cross-service content goes in root `docs/` or a domain repo docs bucket.
+- Use `docs-shape.mdc` for file placement, lifecycle states, and minimum
+  section requirements.
+- Use the `docs` skill for setup, audit, lifecycle changes, templates,
+  references, and assets.
 
-## Skills
+## Agentic SDLC Intent
 
-- `docs-setup` — bootstrap a bucket (asks profile; creates PASSPORT for
-  service buckets).
-- `docs-audit` — scan an existing bucket, classify findings, autofix
-  safe issues, propose risky ones.
-- `docs-lifecycle` — every create / promote / supersede / archive
-  action on a managed doc, including PASSPORT updates.
+Docs are not just human pages. They are agent memory: concise, scoped,
+version-controlled artifacts that let agents move from intent to structured,
+reviewable, executable work.

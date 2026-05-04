@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://umo.dev/schemas/service-catalog.v1.json",
+  "title": "UMO Service Catalog v1",
+  "type": "object",
+  "required": ["schema", "kind", "metadata", "ownership", "interfaces"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "umo.service-catalog/v1"
+    },
+    "kind": {
+      "const": "ServiceCatalog"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "title", "description", "domain", "lifecycle", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "lifecycle": {
+          "type": "string",
+          "enum": ["experimental", "production", "deprecated", "retired"]
+        },
+        "type": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "ownership": {
+      "type": "object",
+      "properties": {
+        "team": {
+          "type": "string"
+        },
+        "lead": {
+          "type": "string"
+        },
+        "slack": {
+          "type": ["string", "null"]
+        },
+        "oncall": {
+          "type": ["string", "null"]
+        }
+      },
+      "anyOf": [
+        {
+          "required": ["team"]
+        },
+        {
+          "required": ["lead"]
+        }
+      ],
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "interfaces": {
+      "type": "object",
+      "required": ["provides", "consumes"],
+      "properties": {
+        "provides": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "consumes": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
