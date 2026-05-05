@@ -1,0 +1,47 @@
+---
+description: Router for UMO Spec-Driven Development (SDD): use when work needs to move from unclear intent into durable docs, Beads planning, test-first implementation, and evidence closeout.
+---
+
+# Spec-Driven Development
+
+Use this rule when a user asks for SDD, spec-driven development, a plan from
+unclear intent, or a disciplined path from idea to implementation.
+
+SDD is the umbrella workflow:
+
+1. **Intent:** clarify outcome, constraints, risks, non-goals, and unknowns.
+2. **Durable specification:** use the `docs` skill to create or update the
+   right artifact:
+   - `spec.md` for active service acceptance criteria;
+   - proposal for options under review;
+   - ADR for durable accepted decisions;
+   - incident/postmortem for operational failure and follow-ups;
+   - guide/reference for steps or source-tied facts.
+3. **Planning:** use the `planning` skill to turn accepted specs, proposals,
+   ADRs, incidents, or review findings into Beads epics, tasks, spikes,
+   `decision` beads, dependencies, labels, and closeout expectations.
+4. **Test-Driven Development:** when implementation is ready and testable, use
+   repo-local and language-specific rules to write a focused failing test or
+   explicit test case before the smallest useful implementation change.
+5. **Evidence closeout:** close Beads with evidence, run repo quality gates, and
+   update docs when behavior, service facts, config, dependencies, or operations
+   changed.
+
+## Routing
+
+- Need a spec/proposal/ADR/incident/reference? Load `docs`.
+- Need a Beads tree or execution handoff? Load `planning`.
+- Need repo navigation, adoption, or health diagnostics? Load `how-to`.
+- Need stack-specific tests or quality commands? Use repo-local and language
+  plugin guidance.
+
+## Guardrails
+
+- Do not skip docs when requirements, architecture, or operational behavior are
+  unclear.
+- Do not skip Beads when accepted work needs execution across sessions or
+  agents.
+- Do not encode long-form specs inside Beads descriptions.
+- Do not let generic SDD guidance override repo-local git, test, deploy, or
+  language rules.
+

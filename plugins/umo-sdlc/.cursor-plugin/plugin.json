@@ -1,7 +1,7 @@
 {
   "name": "umo-sdlc",
-  "version": "0.3.0",
-  "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, and one compact docs skill with references/assets for setup, audit, and lifecycle.",
+  "version": "0.4.0",
+  "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, Beads planning, SDLC how-to guidance, and repo health diagnostics.",
   "author": {
     "name": "UMO Platform Team",
     "email": "devops.tech.user@umo.business"
@@ -18,7 +18,14 @@
     "proposal",
     "runbook",
     "audit",
-    "spec-driven"
+    "spec-driven",
+    "planning",
+    "beads",
+    "bd",
+    "how-to",
+    "sdd",
+    "tdd",
+    "repo-adoption"
   ],
   "license": "UNLICENSED",
   "logo": "./assets/umo.svg",
@@ -34,16 +41,26 @@
       "doc-meta",
       "service-passports",
       "service-catalog-sidecars",
-      "docs-document-shapes"
+      "docs-document-shapes",
+      "planning-lifecycle",
+      "beads-planning-substrate",
+      "bead-tree-shapes",
+      "planning-readiness",
+      "planning-handoff",
+      "planning-closeout",
+      "sdlc-how-to",
+      "generic-sdd-tdd-orientation",
+      "repo-adoption-diagnostics"
     ],
     "delegatesTo": {
       "docs-lifecycle": "umo-agentic-core",
-      "planning": "umo-agentic-core",
-      "beads-planning-substrate": "umo-agentic-core",
       "memory-workflow": "umo-agentic-core",
       "quality-evidence": "umo-agentic-core",
       "review-protocol": "umo-agentic-core",
-      "closeout": "umo-agentic-core"
+      "closeout": "umo-agentic-core",
+      "repo-paths": "repo-local",
+      "repo-commands": "repo-local",
+      "git-policy": "repo-local"
     }
   }
 }

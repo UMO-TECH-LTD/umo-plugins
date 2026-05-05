@@ -1,0 +1,40 @@
+---
+description: Entry point for UMO SDLC how-to guidance, repo navigation, Spec-Driven Development (SDD), Test-Driven Development (TDD), plugin adoption, and repository health diagnostics.
+globs:
+  - AGENTS.md
+  - services/*/AGENTS.md
+  - plugins/umo-sdlc/**
+---
+
+# SDLC How-To
+
+Use the `how-to` skill when a user asks how to use `umo-sdlc`, how to navigate a
+repo, where docs/issues/dependencies live, how to follow SDLC, SDD, or TDD, how
+to adapt a repo to the plugin, why agents are not following it, or whether a
+repo is healthy for docs/planning/Beads workflows.
+
+## Scope
+
+The how-to skill is the broad orientation and diagnostics entry point. It may
+explain, inspect, report, route to specific skills, and apply safe local fixes.
+It delegates deep document work to `docs` and deep Beads planning work to
+`planning`.
+
+## Safe Defaults
+
+- Default to observe/report mode.
+- Keep repo `AGENTS.md` files as thin steering and binding layers.
+- Do not duplicate full SDLC lifecycle, Beads label taxonomy, or planning
+  templates into local `AGENTS.md`.
+- Route future plugin capabilities through the most specific available skill or
+  rule instead of expanding local steering.
+- Require explicit approval before bulk `AGENTS.md` edits, docs moves,
+  proposal/ADR status changes, Beads initialization, enforcement changes, or
+  plugin manifest changes.
+
+## Required Skill
+
+For how-to guidance, SaaS navigation, adoption checks, repository health
+diagnostics, safe autofixes, and report shape, load:
+
+`plugins/umo-sdlc/skills/how-to/SKILL.md`
