@@ -1,9 +1,0 @@
----
-description: TDD-first — create or update a failing test before implementation for new behavior.
-alwaysApply: true
----
-
-# TDD First
-
-Write or update a failing test before implementation when introducing new behavior
-or changing behavior. Load the `tdd-first` skill for the workflow.

@@ -2,6 +2,8 @@
 description: Guardrails for managed UMO docs buckets. Applies to service docs and root/domain docs; use the docs skill for setup, audit, lifecycle, templates, references, and assets.
 globs:
   - services/*/docs/**
+  - services/*/PASSPORT.md
+  - "**/service.catalog.json"
   - docs/**
 ---
 
@@ -23,6 +25,9 @@ non-trivial docs work.
 - Buckets may add indexed category folders, such as
   `docs/infrastructure/nats/`, when a domain has enough docs to justify its
   own local index.
+- Legacy root service passports (`services/<svc>/PASSPORT.md`) may exist before
+  migration. Treat them as sources for a docs bucket; do not remove their YAML
+  frontmatter unless an explicit migration task says to replace them.
 
 ## Markdown Header
 
@@ -41,7 +46,8 @@ doc-meta.
 
 ## Type Boundaries
 
-- `PASSPORT.md`: Markdown-first service entrypoint. No YAML frontmatter.
+- Managed bucket `PASSPORT.md`: Markdown-first service entrypoint. No YAML
+  frontmatter.
 - `reference/service.catalog.json`: machine-readable service facts.
 - `proposals/`: options under review; status becomes `accepted`,
   `rejected`, `implemented`, or `archived`. Do not use `decided` as status.
@@ -92,7 +98,9 @@ Minimum required sections:
 
 ## Forbidden
 
-- Adding YAML frontmatter to `PASSPORT.md`.
+- Adding YAML frontmatter to managed bucket `PASSPORT.md`.
+- Stripping YAML frontmatter from legacy root `services/<svc>/PASSPORT.md`
+  outside an explicit migration.
 - Creating managed Markdown without doc-meta.
 - Putting ADR content in `guides/`.
 - Putting mutable runbook steps in ADRs.

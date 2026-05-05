@@ -21,6 +21,29 @@
     "spec-driven"
   ],
   "license": "UNLICENSED",
-  "logo": "./assets/umo.png",
-  "skills": "./skills/"
+  "logo": "./assets/umo.svg",
+  "skills": "./skills/",
+  "umoComposition": {
+    "apiVersion": "umo.plugins/v1",
+    "core": false,
+    "precedence": 20,
+    "dependsOn": ["umo-agentic-core"],
+    "optionalDependsOn": [],
+    "owns": [
+      "docs-buckets",
+      "doc-meta",
+      "service-passports",
+      "service-catalog-sidecars",
+      "docs-document-shapes"
+    ],
+    "delegatesTo": {
+      "docs-lifecycle": "umo-agentic-core",
+      "planning": "umo-agentic-core",
+      "beads-planning-substrate": "umo-agentic-core",
+      "memory-workflow": "umo-agentic-core",
+      "quality-evidence": "umo-agentic-core",
+      "review-protocol": "umo-agentic-core",
+      "closeout": "umo-agentic-core"
+    }
+  }
 }

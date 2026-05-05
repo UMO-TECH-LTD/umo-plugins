@@ -1,9 +1,11 @@
 ---
 name: docs
-description: Creates, audits, repairs, and maintains UMO docs buckets. Use whenever working with documentation, docs/, services/*/docs/, PASSPORT.md, service.catalog.json, README.md, spec.md, backlog.md, ROADMAP.md, proposals, ADRs, guides, references, incidents, docs lifecycle, doc-meta, or the umo-sdlc plugin rules/skills.
+description: Specializes UMO managed docs buckets, doc-meta, Markdown-first service passports, service.catalog.json sidecars, and typed proposal/ADR/guide/reference/incident shapes. Use when creating, auditing, repairing, or migrating docs/ or services/*/docs/ buckets; editing PASSPORT.md or service.catalog.json; or updating the umo-sdlc plugin. Do not use for generic docs lifecycle reminders outside UMO bucket conventions; use core docs-lifecycle for that.
 paths:
   - "**/docs/**"
+  - "services/*/PASSPORT.md"
   - "services/*/AGENTS.md"
+  - "**/service.catalog.json"
   - "plugins/umo-sdlc/**"
   - ".cursor/agents/**"
 ---
@@ -12,6 +14,9 @@ paths:
 
 Use this skill for all managed docs work. It consolidates setup, audit, and
 lifecycle actions for UMO SDLC documentation.
+
+`umo-agentic-core` owns generic docs lifecycle. This skill owns UMO bucket
+structure, document shapes, service passports, doc-meta, and catalog sidecars.
 
 Load `references/docs-shape.md` when you need exact templates, required
 sections, status semantics, or validation details. Use files under `assets/`
@@ -29,7 +34,8 @@ for machine-readable templates/schemas.
    - **audit**: validate/repair existing structure;
    - **lifecycle**: create/promote/archive/update a managed doc.
 3. For service work, read in order:
-   - `services/<svc>/docs/PASSPORT.md`
+   - `services/<svc>/docs/PASSPORT.md` if present
+   - `services/<svc>/PASSPORT.md` if the docs passport has not been migrated
    - `services/<svc>/docs/reference/service.catalog.json` if present
    - `services/<svc>/AGENTS.md` if present
 4. Before edits, classify docs by type: proposal, ADR, guide, reference,
@@ -37,9 +43,12 @@ for machine-readable templates/schemas.
 
 ## Core Rules
 
-- `PASSPORT.md` is Markdown-first; never add YAML frontmatter.
+- Managed bucket `PASSPORT.md` is Markdown-first; never add YAML frontmatter.
 - Machine-readable service facts live in `reference/service.catalog.json`.
 - Managed Markdown starts with doc-meta.
+- Legacy root service passports (`services/<svc>/PASSPORT.md`) may still use
+  YAML frontmatter. Treat them as migration sources; do not strip or rewrite
+  them unless the user explicitly asks to migrate that service bucket.
 - Proposal statuses are `draft`, `accepted`, `rejected`, `implemented`,
   `archived`. Do not use `decided` as a status.
 - ADRs are durable accepted decisions; body is immutable after acceptance.
@@ -53,6 +62,8 @@ for machine-readable templates/schemas.
 ## Setup
 
 Create exactly one bucket. If the bucket already exists, switch to audit.
+If only a legacy root `services/<svc>/PASSPORT.md` exists, propose a service
+docs migration before creating `services/<svc>/docs/PASSPORT.md`.
 
 Service skeleton:
 
@@ -83,14 +94,15 @@ Check:
 - doc-meta on managed Markdown;
 - status/type/location consistency;
 - category folder README indexes and root bucket links;
-- no YAML frontmatter in `PASSPORT.md`;
+- no YAML frontmatter in managed bucket `PASSPORT.md`;
 - proposal/ADR/guide classification;
 - `reference/service.catalog.json` parses and matches service identity;
 - stale links after moves/renames.
 
 Safe autofixes: `.gitkeep`, obvious doc-meta for 5 files or fewer, status/type
 typos, whitespace. Propose first for moves, renames, ADR extraction, archive
-tombstones, catalog creation/restructure, or bulk header insertion.
+tombstones, catalog creation/restructure, legacy passport migration, or bulk
+header insertion.
 
 ## Lifecycle
 

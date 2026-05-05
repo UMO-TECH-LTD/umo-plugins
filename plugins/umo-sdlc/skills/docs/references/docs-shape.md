@@ -2,7 +2,7 @@
 > **Status:** active
 > **Type:** reference
 > **Owner:** UMO Platform Team
-> **Updated:** 2026-05-04
+> **Updated:** 2026-05-05
 
 # UMO SDLC Docs Shape Reference
 
@@ -27,6 +27,11 @@ Service buckets are spec-driven and have a Markdown-first `PASSPORT.md`.
 Library buckets are knowledge stores and must not contain `PASSPORT.md`,
 `spec.md`, or `backlog.md`.
 
+Legacy root service passports at `services/<svc>/PASSPORT.md` may still exist
+in repos that have not migrated to `services/<svc>/docs/PASSPORT.md`. They may
+use repo-specific YAML frontmatter. Treat them as migration sources and preserve
+them unless an explicit migration task replaces them with a managed docs bucket.
+
 Buckets may add indexed category folders when a domain has enough docs to
 benefit from local grouping, for example `docs/infrastructure/nats/`. Category
 folders do not change lifecycle semantics: every managed Markdown file still
@@ -47,10 +52,10 @@ uses doc-meta and its `Type` still means the same thing.
 ├── reference/
 │   └── service.catalog.json  # service sidecar when repo requires cataloging
 ├── incidents/
-└── archive/
-    ├── proposals/
-    ├── guides/
-    └── reference/
+├── archive/
+│   ├── proposals/
+│   ├── guides/
+│   └── reference/
 └── <category>/                # optional, e.g. infrastructure/nats/
     ├── README.md              # required local index
     └── ...
@@ -100,7 +105,7 @@ deciding is an event/date, not a lifecycle state.
 | Type | Use When | Typical Status | Location |
 |------|----------|----------------|----------|
 | overview | Bucket index and navigation | active | `README.md` |
-| passport | First service entrypoint for humans and agents | active | `PASSPORT.md` |
+| passport | First service entrypoint for humans and agents | active | `services/<svc>/docs/PASSPORT.md` |
 | proposal | Direction is under review or accepted/rejected | draft, accepted, rejected, implemented, archived | `proposals/` |
 | adr | Durable accepted decision | accepted, superseded | `adr/NNN-slug.md` |
 | guide | Living runbook/how-to | active, archived | `guides/` |
@@ -501,7 +506,9 @@ What restored service.
 - File location matches `Type`.
 - Filename matches location convention.
 - Managed Markdown starts with doc-meta.
-- `PASSPORT.md` has no YAML frontmatter.
+- Managed docs bucket `PASSPORT.md` has no YAML frontmatter.
+- Legacy root `services/<svc>/PASSPORT.md` is preserved unless the task is an
+  explicit migration.
 - Proposal status is not `decided`; use `accepted` or `rejected`.
 - ADR body is not edited after acceptance.
 - Guide focuses on steps; ADR holds decisions.

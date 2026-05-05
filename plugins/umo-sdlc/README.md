@@ -18,6 +18,12 @@ See Cursor docs: [Agent Skills](https://cursor.com/docs/skills) and
 ```text
 plugins/umo-sdlc/
 ├── README.md
+├── .cursor-plugin/
+│   └── plugin.json
+├── .codex-plugin/
+│   └── plugin.json
+├── assets/
+│   └── umo.svg
 ├── rules/
 │   └── docs.mdc
 └── skills/
@@ -34,8 +40,8 @@ plugins/umo-sdlc/
 ## Skill
 
 `skills/docs/SKILL.md` is the single docs skill. Its `paths` frontmatter scopes
-it to docs buckets, SaaS service `AGENTS.md`, the `umo-sdlc` plugin, and docs
-subagents.
+it to docs buckets, SaaS service passports and `AGENTS.md`, service catalog
+sidecars, the `umo-sdlc` plugin, and docs subagents.
 
 It handles:
 
@@ -46,12 +52,20 @@ It handles:
 - Markdown-first `PASSPORT.md`;
 - `reference/service.catalog.json`.
 
+Generic docs lifecycle remains owned by `umo-agentic-core`; `umo-sdlc` owns the
+UMO bucket shape, doc-meta, service passports, catalog sidecars, and document
+type templates.
+
 ## Core Model
 
 - Service bucket: `services/<svc>/docs/`
 - Library bucket: `docs/`
-- Service passport: Markdown-first `PASSPORT.md`
-- Machine catalog: `reference/service.catalog.json`
+- Managed service passport: `services/<svc>/docs/PASSPORT.md`
+- Machine catalog: `services/<svc>/docs/reference/service.catalog.json`
+
+Some repos still have legacy root passports at `services/<svc>/PASSPORT.md`.
+Treat them as migration sources; do not strip YAML frontmatter or rewrite them
+unless the task is an explicit service docs migration.
 
 Proposal state:
 

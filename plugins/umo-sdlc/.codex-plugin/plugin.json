@@ -22,6 +22,29 @@
   ],
   "license": "UNLICENSED",
   "skills": "./skills/",
+  "umoComposition": {
+    "apiVersion": "umo.plugins/v1",
+    "core": false,
+    "precedence": 20,
+    "dependsOn": ["umo-agentic-core"],
+    "optionalDependsOn": [],
+    "owns": [
+      "docs-buckets",
+      "doc-meta",
+      "service-passports",
+      "service-catalog-sidecars",
+      "docs-document-shapes"
+    ],
+    "delegatesTo": {
+      "docs-lifecycle": "umo-agentic-core",
+      "planning": "umo-agentic-core",
+      "beads-planning-substrate": "umo-agentic-core",
+      "memory-workflow": "umo-agentic-core",
+      "quality-evidence": "umo-agentic-core",
+      "review-protocol": "umo-agentic-core",
+      "closeout": "umo-agentic-core"
+    }
+  },
   "interface": {
     "displayName": "UMO SDLC",
     "shortDescription": "Standardize and audit service-scoped and library docs across UMO repos.",
@@ -39,7 +62,7 @@
       "Use the docs skill to write a proposal or ADR."
     ],
     "brandColor": "#1F6FEB",
-    "composerIcon": "./assets/umo.png",
-    "logo": "./assets/umo.png"
+    "composerIcon": "./assets/umo.svg",
+    "logo": "./assets/umo.svg"
   }
 }
