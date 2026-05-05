@@ -12,8 +12,8 @@ needed.
 
 ## Source
 
-`plugins/umo-sdlc/rules/docs-shape.mdc` and
-`plugins/umo-sdlc/skills/*/SKILL.md` use this reference.
+`plugins/umo-sdlc/rules/docs.mdc` and
+`plugins/umo-sdlc/skills/docs/SKILL.md` use this reference.
 
 ## Core Model
 
@@ -26,6 +26,11 @@ UMO docs are bounded memory buckets:
 Service buckets are spec-driven and have a Markdown-first `PASSPORT.md`.
 Library buckets are knowledge stores and must not contain `PASSPORT.md`,
 `spec.md`, or `backlog.md`.
+
+Buckets may add indexed category folders when a domain has enough docs to
+benefit from local grouping, for example `docs/infrastructure/nats/`. Category
+folders do not change lifecycle semantics: every managed Markdown file still
+uses doc-meta and its `Type` still means the same thing.
 
 ## Required Layout
 
@@ -46,7 +51,24 @@ Library buckets are knowledge stores and must not contain `PASSPORT.md`,
     ├── proposals/
     ├── guides/
     └── reference/
+└── <category>/                # optional, e.g. infrastructure/nats/
+    ├── README.md              # required local index
+    └── ...
 ```
+
+## Category Folders
+
+Use category folders when a subject would otherwise spread too many files
+across top-level `guides/` and `reference/`.
+
+Rules:
+
+- Category folder must have `README.md` with `Type: overview`.
+- Root bucket `README.md` must link to the category.
+- Category docs keep normal doc-meta and lifecycle semantics.
+- Category docs may be guides, references, ADRs, incidents, etc., but the
+  category should explain how it is organized.
+- Do not create category folders just to hide unclassified docs.
 
 ## Managed Markdown Header
 

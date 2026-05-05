@@ -23,6 +23,7 @@ for machine-readable templates/schemas.
    - service: `services/<svc>/docs/`
    - root library: `docs/`
    - domain library: `<repo-root>/docs/`
+   - optional category folder inside a bucket, e.g. `docs/infrastructure/nats/`
 2. Detect the action:
    - **setup**: bucket missing;
    - **audit**: validate/repair existing structure;
@@ -45,6 +46,9 @@ for machine-readable templates/schemas.
 - Guides explain how. ADRs explain why. References mirror facts/source files.
 - Updating passport facts requires updating `service.catalog.json` when it
   exists.
+- Category folders are allowed when a domain has enough docs to need a local
+  index. They must have `README.md`, keep doc-meta/type semantics, and be
+  linked from the root bucket index.
 
 ## Setup
 
@@ -78,6 +82,7 @@ Check:
 - required files/folders for the bucket profile;
 - doc-meta on managed Markdown;
 - status/type/location consistency;
+- category folder README indexes and root bucket links;
 - no YAML frontmatter in `PASSPORT.md`;
 - proposal/ADR/guide classification;
 - `reference/service.catalog.json` parses and matches service identity;

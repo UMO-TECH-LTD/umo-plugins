@@ -35,8 +35,7 @@ When invoked:
    - root library: `docs/`
    - domain library: `<repo-root>/docs/`
 2. Read the relevant UMO SDLC rules/skills/reference:
-   - `plugins/umo-sdlc/rules/docs-buckets.mdc`
-   - `plugins/umo-sdlc/rules/docs-shape.mdc`
+   - `plugins/umo-sdlc/rules/docs.mdc`
    - `plugins/umo-sdlc/skills/docs/SKILL.md`
    - `plugins/umo-sdlc/skills/docs/references/docs-shape.md`
    - `plugins/umo-sdlc/skills/docs/assets/`
@@ -44,7 +43,9 @@ When invoked:
 4. If a guide contains decision rationale, propose or perform ADR extraction.
 5. If service identity/deps/contracts change, update both `PASSPORT.md` and
    `reference/service.catalog.json`.
-6. Validate:
+6. Allow category folders when useful (`docs/infrastructure/nats/`), but require
+   a category `README.md`, root index link, doc-meta, and normal lifecycle types.
+7. Validate:
    - doc-meta on managed Markdown;
    - type/location consistency;
    - JSON parses;

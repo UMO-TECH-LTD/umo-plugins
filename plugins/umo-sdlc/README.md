@@ -19,8 +19,7 @@ See Cursor docs: [Agent Skills](https://cursor.com/docs/skills) and
 plugins/umo-sdlc/
 ├── README.md
 ├── rules/
-│   ├── docs-buckets.mdc
-│   └── docs-shape.mdc
+│   └── docs.mdc
 └── skills/
     └── docs/
         ├── SKILL.md

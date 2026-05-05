@@ -1,11 +1,11 @@
 ---
-description: Shape of managed UMO docs buckets. Applies to service docs and root/domain docs; keeps rules concise and points to the detailed docs-shape reference.
+description: Guardrails for managed UMO docs buckets. Applies to service docs and root/domain docs; use the docs skill for setup, audit, lifecycle, templates, references, and assets.
 globs:
   - services/*/docs/**
   - docs/**
 ---
 
-# Docs Shape
+# Docs
 
 Use this rule when editing managed docs. The `docs` skill owns setup, audit,
 lifecycle, templates, references, and assets. Invoke that skill for any
@@ -20,6 +20,9 @@ non-trivial docs work.
 - Library buckets must not contain `PASSPORT.md`, `spec.md`, or `backlog.md`.
 - Both profiles use `adr/`, `proposals/`, `guides/`, `reference/`,
   `incidents/`, and `archive/{proposals,guides,reference}/`.
+- Buckets may add indexed category folders, such as
+  `docs/infrastructure/nats/`, when a domain has enough docs to justify its
+  own local index.
 
 ## Markdown Header
 
@@ -51,6 +54,8 @@ doc-meta.
 - `spec.md`: in-flight acceptance criteria.
 - `backlog.md`: future/deferred work.
 - `ROADMAP.md`: short priority ordering with links.
+- Category folders: local grouping only. They do not change doc-meta,
+  lifecycle, or type semantics.
 
 ## Promotion Heuristics
 
@@ -95,3 +100,4 @@ Minimum required sections:
 - Deleting completed spec criteria.
 - Updating passport facts without updating `reference/service.catalog.json`
   when the sidecar exists.
+- Creating category folders without a `README.md` index and root bucket link.
