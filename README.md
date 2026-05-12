@@ -1,6 +1,17 @@
 # umo-plugins
 
-The team marketplace bundles several plugins; **`umo-brain`** provides DAVID **organizational memory**: **Brain MCP** (`david-brain`) and the **`brain-harness`** rule. GitLab MCP is **not** part of that bundle — add it separately in Cursor if you need it.
+Tri-platform plugin marketplace shipping two UMO plugins to **Cursor**, **Codex**, and **Claude Code** (Claude Desktop / CLI / Claude.ai for Teams):
+
+- **`umo-brain`** — DAVID **organizational memory**: **Brain MCP** (`david-brain`) plus the **`brain-harness`** rule / skill / SessionStart hook.
+- **`umo-sdlc`** — Markdown-first docs buckets, typed document lifecycles, service passports, `service.catalog.json` sidecars, Beads planning, SDD/TDD routing, and repo health diagnostics. Skills (`docs`, `planning`, `how-to`) plus slash commands (`/sdd`, `/docs`, `/planning`, `/how-to`).
+
+GitLab MCP is **not** bundled — add it separately in your host if you need it.
+
+| Host | Marketplace file | Plugin manifest | MCP file |
+|---|---|---|---|
+| **Cursor** | `.cursor-plugin/marketplace.json` | `plugins/<n>/.cursor-plugin/plugin.json` | `plugins/<n>/mcp.json` |
+| **Codex** | per-plugin (point Codex at `plugins/<n>/`) | `plugins/<n>/.codex-plugin/plugin.json` | `plugins/<n>/.mcp.json` |
+| **Claude Code** | `.claude-plugin/marketplace.json` | `plugins/<n>/.claude-plugin/plugin.json` | inline in plugin manifest (`mcpServers`) |
 
 **Everything below is the full developer guide** (one place).
 
@@ -102,6 +113,166 @@ We only document **macOS + `~/.zshenv`** above. For anything else, use **Cursor'
 
 ```bash
 BRAIN_MCP_API_KEY=<david.umo.dev → Settings → API Keys>
+GITHUB_TOKEN=<optional: needed for Claude Code background auto-updates from this private repo>
 ```
 
 ---
+
+## Claude Code (Desktop, CLI, Claude.ai for Teams)
+
+This repo is also a [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces). It's the same content as the Cursor marketplace, exposed through Claude Code's plugin format.
+
+### What ships to Claude Code
+
+| Plugin | Components |
+|---|---|
+| `umo-brain` | `david-brain` HTTP MCP (`https://mcp.umo.dev/mcp`, bearer `${BRAIN_MCP_API_KEY}`) + `brain-harness` skill + SessionStart hook that nudges the agent into the recall/feedback/writeback workflow at every session start |
+| `umo-sdlc` | Skills: `docs`, `planning`, `how-to`. Slash commands: `/umo-sdlc:sdd`, `/umo-sdlc:docs`, `/umo-sdlc:planning`, `/umo-sdlc:how-to` |
+
+The Cursor `rules/*.mdc` files are **Cursor-only**; in Claude Code the rule content is delivered through the matching skill or slash command. The `brain-harness` rule's `alwaysApply: true` semantics are replicated by combining a model-invokable skill with a `SessionStart` hook.
+
+### 1. Install Claude Code
+
+[code.claude.com](https://code.claude.com) — Desktop and CLI distributions. Corporate Claude Teams accounts work the same as personal; marketplaces sync to Claude.ai's plugin surface.
+
+### 2. Set the API key (and optionally `GITHUB_TOKEN`)
+
+```bash
+export BRAIN_MCP_API_KEY="<from david.umo.dev → Settings → API Keys>"
+
+# Optional but recommended for private-repo background auto-updates:
+export GITHUB_TOKEN="<PAT with read:repo on this mirror>"
+```
+
+Put these in `~/.zshenv` on macOS (same reason as for Cursor — GUI launches don't load `~/.zshrc`), or in your shell rc on Linux. The Claude Code MCP block uses standard `${BRAIN_MCP_API_KEY}` interpolation.
+
+### 3. Add the marketplace
+
+Pick one of these — they correspond to the choices in the team marketplace incident postmortem (`docs/incidents/2026-05-12-team-marketplace-private-plugin-load-failure.md`).
+
+**Option A — private GitHub mirror (default, requires per-developer git auth):**
+
+```bash
+# In an interactive Claude Code session
+/plugin marketplace add <org>/<repo>
+/plugin install umo-brain@umo-plugins
+/plugin install umo-sdlc@umo-plugins
+
+# Or non-interactively
+claude plugin marketplace add <org>/<repo>
+claude plugin install umo-brain@umo-plugins
+claude plugin install umo-sdlc@umo-plugins
+```
+
+This is the **same root cause class** as the Cursor team marketplace incident: Claude Code uses `git clone` under the hood. Developers without GitHub credentials on the laptop will fail with `fatal: could not read Username for 'https://github.com'`. Mitigations:
+
+- `gh auth login` or a `git-credential-*` helper for interactive use.
+- `GITHUB_TOKEN` (or `GH_TOKEN`) in the environment for **background auto-updates** — Claude Code can't prompt at startup, so without a token, background updates silently fail.
+- For airgapped or locked-down environments, use Option B below.
+
+**Option B — internal git host (no GitHub dependency):**
+
+```bash
+/plugin marketplace add https://gitlab.<your-org>.com/platform/umo-plugins.git
+```
+
+Works the same as Option A, but auth flows through whatever helper your laptops already use for the internal git server (typically org SSO).
+
+**Option C — pre-seeded container image (no per-developer git auth):**
+
+For corporate Claude Teams rolling Claude Code through a managed image, pre-populate the plugins cache at build time:
+
+```bash
+# Build-time, inside the corporate image:
+CLAUDE_CODE_PLUGIN_CACHE_DIR=/opt/claude-seed \
+  claude plugin marketplace add <org>/<repo>
+CLAUDE_CODE_PLUGIN_CACHE_DIR=/opt/claude-seed \
+  claude plugin install umo-brain@umo-plugins
+CLAUDE_CODE_PLUGIN_CACHE_DIR=/opt/claude-seed \
+  claude plugin install umo-sdlc@umo-plugins
+
+# Runtime, in the image's user environment:
+export CLAUDE_CODE_PLUGIN_SEED_DIR=/opt/claude-seed
+```
+
+Claude Code reads from the seed without re-cloning. `git pull` never runs on the user's laptop, so the private-GitHub failure class is eliminated. Note: seed-managed marketplaces are read-only; auto-updates are disabled.
+
+For a deeper treatment of the trade-offs (Cursor and Claude both apply), read the postmortem: [`docs/incidents/2026-05-12-team-marketplace-private-plugin-load-failure.md`](./docs/incidents/2026-05-12-team-marketplace-private-plugin-load-failure.md).
+
+### 4. Pre-trust the marketplace for your team (optional)
+
+Add the marketplace to managed settings so team members are prompted automatically when they trust the project folder. Put this in `~/.claude/settings.json` (user scope) or `.claude/settings.json` (project scope, committed to your repo):
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "umo-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "<org>/<repo>"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "umo-brain@umo-plugins": true,
+    "umo-sdlc@umo-plugins": true
+  }
+}
+```
+
+For corporate lockdown, your platform team can also set [`strictKnownMarketplaces`](https://code.claude.com/docs/en/settings#strictknownmarketplaces) in managed settings to whitelist only this marketplace.
+
+### 5. Verify
+
+```bash
+/plugin marketplace list
+/plugin            # opens the plugin picker — confirm umo-brain and umo-sdlc are installed and enabled
+```
+
+In a fresh session you should:
+
+1. See the `umo-brain` SessionStart message (one-line brain workflow reminder).
+2. See `david_whoami`, `david_recall`, `david_feedback`, `david_remember`, `david_invalidate` available as tools from the `david-brain` MCP server.
+3. Have `/umo-sdlc:sdd`, `/umo-sdlc:docs`, `/umo-sdlc:planning`, `/umo-sdlc:how-to` available as slash commands.
+4. Be able to ask "use the brain-harness skill" and have Claude load it; skills `docs`, `planning`, `how-to` are auto-invokable by description for relevant tasks.
+
+### 6. Validate locally before publishing
+
+```bash
+./scripts/validate-claude.sh
+```
+
+This parses every manifest, checks SKILL/command frontmatter, and runs `claude plugin validate .` if the CLI is on PATH. Run it before pushing changes to the marketplace branch — Claude Code refuses to load plugins with malformed `plugin.json` or `hooks.json`.
+
+---
+
+## Repo layout
+
+```text
+cursor-umo-brain/
+├── .claude-plugin/marketplace.json       ← Claude Code marketplace catalog
+├── .cursor-plugin/marketplace.json       ← Cursor team marketplace catalog
+├── plugins/
+│   ├── umo-brain/
+│   │   ├── .claude-plugin/plugin.json    ← Claude (inline mcpServers + skills + hooks)
+│   │   ├── .cursor-plugin/plugin.json    ← Cursor
+│   │   ├── .codex-plugin/plugin.json     ← Codex
+│   │   ├── skills/brain-harness/SKILL.md ← Claude skill
+│   │   ├── hooks/{hooks.json,session-start.sh}  ← Claude SessionStart nudge
+│   │   ├── rules/brain-harness.mdc       ← Cursor alwaysApply rule
+│   │   ├── mcp.json / .mcp.json          ← Cursor / Codex MCP configs
+│   │   └── assets/
+│   └── umo-sdlc/
+│       ├── .claude-plugin/plugin.json    ← Claude (skills + commands)
+│       ├── .cursor-plugin/plugin.json    ← Cursor
+│       ├── .codex-plugin/plugin.json     ← Codex
+│       ├── skills/{docs,planning,how-to}/  ← Shared by Cursor + Codex + Claude
+│       ├── commands/{sdd,docs,planning,how-to}.md  ← Claude slash commands
+│       ├── rules/{docs,planning,how-to,sdd}.mdc    ← Cursor rules
+│       └── assets/
+└── scripts/
+    └── validate-claude.sh
+```
+
+---
+

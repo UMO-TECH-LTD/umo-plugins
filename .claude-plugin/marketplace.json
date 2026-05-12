@@ -1,0 +1,39 @@
+{
+  "name": "umo-plugins",
+  "owner": {
+    "name": "UMO Platform Team",
+    "email": "devops.tech.user@umo.business"
+  },
+  "metadata": {
+    "description": "UMO internal Claude Code plugins — agentic SDLC, brain harness, organizational memory. Mirrors the Cursor/Codex bundle in this repo.",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "umo-brain",
+      "source": "./umo-brain",
+      "description": "DAVID brain harness — Brain MCP (david-brain) plus a SessionStart hook and brain-harness skill for organizational memory across teams, repos, and sessions.",
+      "version": "0.1.0",
+      "author": {
+        "name": "UMO Platform Team",
+        "email": "devops.tech.user@umo.business"
+      },
+      "license": "UNLICENSED",
+      "category": "productivity",
+      "keywords": ["umo", "david", "brain", "memory", "mcp", "organizational-memory"]
+    },
+    {
+      "name": "umo-sdlc",
+      "source": "./umo-sdlc",
+      "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, Beads planning, SDD/TDD routing, and repo health diagnostics. Ships skills (docs, planning, how-to) and slash commands (/sdd, /docs, /planning, /how-to).",
+      "version": "0.4.0",
+      "author": {
+        "name": "UMO Platform Team",
+        "email": "devops.tech.user@umo.business"
+      },
+      "license": "UNLICENSED",
+      "category": "productivity",
+      "keywords": ["umo", "sdlc", "docs", "service-passport", "adr", "proposal", "beads", "planning", "sdd", "tdd"]
+    }
+  ]
+}
