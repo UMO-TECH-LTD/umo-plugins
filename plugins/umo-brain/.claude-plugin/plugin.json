@@ -1,0 +1,22 @@
+{
+  "name": "umo-brain",
+  "version": "0.1.0",
+  "description": "DAVID brain harness — Brain MCP (david-brain) plus brain-harness skill and SessionStart hook for organizational memory across repos and agent sessions.",
+  "author": {
+    "name": "UMO Platform Team",
+    "email": "devops.tech.user@umo.business"
+  },
+  "homepage": "https://david.umo.dev/",
+  "license": "UNLICENSED",
+  "keywords": ["umo", "umo-brain", "david", "brain", "memory", "mcp", "organizational-memory"],
+  "mcpServers": {
+    "david-brain": {
+      "url": "https://mcp.umo.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${BRAIN_MCP_API_KEY}"
+      }
+    }
+  },
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
+}
