@@ -14,19 +14,9 @@
       "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, and one compact docs skill with references/assets for setup, audit, and lifecycle."
     },
     {
-      "name": "umo-agentic-core",
-      "source": "./plugins/umo-agentic-core",
-      "description": "Core agentic delivery lifecycle — SDLC, planning with beads, memory, docs, quality evidence, review, closeout, adoption modes, and KPI reporting guidance"
-    },
-    {
       "name": "umo-brain",
       "source": "./plugins/umo-brain",
-      "description": "DAVID agent harness — brain-first memory protocol, GitLab integration"
-    },
-    {
-      "name": "umo-engineering-standards",
-      "source": "./plugins/umo-engineering-standards",
-      "description": "Reusable engineering standards — quality loops, TDD, and deterministic dependency management"
+      "description": "DAVID brain harness — Brain MCP (david-brain) and brain-harness rule; organizational memory for agents"
     }
   ]
 }

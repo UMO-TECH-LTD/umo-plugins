@@ -1,21 +1,24 @@
 # umo-brain (plugin package)
 
-Shared plugin package for both Cursor and Codex.
+Cursor and Codex bundle for **Brain MCP** and the **`brain-harness`** rule.
 
 ## Manifests
 
 - Cursor: `.cursor-plugin/plugin.json`
 - Codex: `.codex-plugin/plugin.json`
 
-## MCP config
+## MCP
 
-- Cursor uses: `mcp.json`
-- Codex uses: `.mcp.json`
+- Cursor: `mcp.json`
+- Codex: `.mcp.json`
 
-Both files currently contain the same MCP server config.
+Both define **`david-brain`** only (Bearer `${env:BRAIN_MCP_API_KEY}`). Add other MCP servers in your user or project Cursor config if needed.
 
-## Codex integration
+## Rules
 
-1. Add this plugin to your Codex marketplace file (`<repo>/.agents/plugins/marketplace.json` or `~/.agents/plugins/marketplace.json`).
-2. Point `source.path` to this plugin directory.
-3. Install/enable the plugin from Codex UI.
+- `rules/brain-harness.mdc` — `alwaysApply` behavior for recall, feedback, and writeback.
+
+## Codex
+
+1. Add this directory to your Codex marketplace (`source.path`).
+2. Install/enable from the Codex UI.

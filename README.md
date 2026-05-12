@@ -1,6 +1,6 @@
 # umo-plugins
 
-DAVID agent harness for Cursor — organizational memory, MR review (four personas), GitLab.com via **`gitlab-cloud-umotech`** (`@zereight/mcp-gitlab`).
+The team marketplace bundles several plugins; **`umo-brain`** provides DAVID **organizational memory**: **Brain MCP** (`david-brain`) and the **`brain-harness`** rule. GitLab MCP is **not** part of that bundle — add it separately in Cursor if you need it.
 
 **Everything below is the full developer guide** (one place).
 
@@ -10,11 +10,10 @@ DAVID agent harness for Cursor — organizational memory, MR review (four person
 
 | | |
 |--|--|
-| **Rules** | `brain-harness` (trigger-based recall, mandatory feedback, capability-aware writeback), `hard-rules` (TS guardrails) — `alwaysApply` |
-| **MR review** | `/mr-code-review`, `/mr-compliance-audit`, `/mr-security-scan`, `/mr-standards-guard`, `/mr-review-orchestrator` |
-| **Entry points** | `@mr-reviewer`, `/review-mr <project> <iid>` |
+| **Rules** | `brain-harness` (`alwaysApply` — trigger-based recall, mandatory feedback, capability-aware writeback) |
+| **MCP** | `david-brain` in bundled `mcp.json` / `.mcp.json` |
 
-Skills and commands work in **any** repo once the plugin is installed — no per-project `.cursor` needed.
+The **`brain-harness`** rule applies in **any** repo once **umo-brain** is installed — no per-project `.cursor` needed.
 
 ---
 
@@ -49,7 +48,7 @@ If it's not listed, ask your team how the plugin is shipped.
 
 ## 2. API keys
 
-You need **`BRAIN_MCP_API_KEY`** and **`GITLAB_PERSONAL_ACCESS_TOKEN`**. Never commit them — env vars or Cursor Secrets.
+You need **`BRAIN_MCP_API_KEY`**. Never commit it — env vars or Cursor Secrets.
 
 ### Brain — `BRAIN_MCP_API_KEY`
 
@@ -59,23 +58,15 @@ You need **`BRAIN_MCP_API_KEY`** and **`GITLAB_PERSONAL_ACCESS_TOKEN`**. Never c
 
 Brain MCP URL (bundled): **`https://mcp.umo.dev/mcp`** (VPN if your org requires it).
 
-### GitLab.com — `GITLAB_PERSONAL_ACCESS_TOKEN`
+### Optional: GitLab elsewhere in Cursor
 
-MCP server id: **`gitlab-cloud-umotech`** (`@zereight/mcp-gitlab`). Bundled `mcp.json` uses **`https://gitlab.com/api/v4`**.
-
-1. **[gitlab.com → Personal access tokens](https://gitlab.com/-/user_settings/personal_access_tokens)** (or **avatar → Preferences → Access Tokens**)
-2. New token — name (e.g. `cursor-mcp`), expiry
-3. Scopes: **`api`**
-4. Create → **copy once** (GitLab won't show it again)
-5. Set **`GITLAB_PERSONAL_ACCESS_TOKEN`** in the same places as the brain key ([macOS](#macos-api-keys-for-cursor))
-
-Revoke/rotate on that page if it leaks.
+If you use GitLab from agents, configure a GitLab MCP (for example `@zereight/mcp-gitlab`) under **Cursor → MCP** — not in `plugins/umo-brain/mcp.json`.
 
 ---
 
 ## 3. Turn MCP on
 
-**Features** → **Model Context Protocol** — enable **`david-brain`** and **`gitlab-cloud-umotech`**.
+**Features** → **Model Context Protocol** — enable **`david-brain`** (and any GitLab MCP you added separately).
 
 ---
 
@@ -86,19 +77,17 @@ This plugin's `mcp.json` uses **`${env:VAR}`** for secrets. Cursor expands that 
 | Variable | Role |
 |----------|------|
 | `BRAIN_MCP_API_KEY` | Bearer for **david-brain** |
-| `GITLAB_PERSONAL_ACCESS_TOKEN` | **gitlab-cloud-umotech** |
 
-**Why `~/.zshenv`:** **Cursor.app** does not load **`~/.zshrc`** for GUI launches. **`~/.zshenv`** is loaded for zsh and is the supported place to define exports so **`${env:BRAIN_MCP_API_KEY}`** and **`${env:GITLAB_PERSONAL_ACCESS_TOKEN}`** are not empty.
+**Why `~/.zshenv`:** **Cursor.app** does not load **`~/.zshrc`** for GUI launches. **`~/.zshenv`** is loaded for zsh and is the supported place to define exports so **`${env:BRAIN_MCP_API_KEY}`** is not empty.
 
-1. Add the values from [§2](#2-api-keys) to **`~/.zshenv`** (create the file if it does not exist):
+1. Add the value from [§2](#2-api-keys) to **`~/.zshenv`** (create the file if it does not exist):
 
    ```bash
    export BRAIN_MCP_API_KEY="…"
-   export GITLAB_PERSONAL_ACCESS_TOKEN="glpat-…"
    ```
 
 2. **Quit Cursor completely** and open it again (or **Command Palette** → `MCP: Restart All MCP Servers`).
-3. **View → Output → channel MCP** — confirm **david-brain** and **gitlab-cloud-umotech** start without errors.
+3. **View → Output → channel MCP** — confirm **david-brain** starts without errors.
 
 ### Other setups (Remote SSH, Linux, Windows, cloud agents, …)
 
@@ -107,15 +96,12 @@ We only document **macOS + `~/.zshenv`** above. For anything else, use **Cursor'
 - **[Model Context Protocol (MCP)](https://cursor.com/docs/context/mcp)** — configuration, tools, troubleshooting  
 - **[Config interpolation](https://cursor.com/docs/context/mcp#config-interpolation)** — `${env:VAR}` and how Cursor resolves it  
 
-Apply the same **variable names** (`BRAIN_MCP_API_KEY`, `GITLAB_PERSONAL_ACCESS_TOKEN`) wherever your environment requires.
-
 ---
 
 ## Environment variables (reference)
 
 ```bash
 BRAIN_MCP_API_KEY=<david.umo.dev → Settings → API Keys>
-GITLAB_PERSONAL_ACCESS_TOKEN=<gitlab.com PAT, api scope>
 ```
 
 ---
