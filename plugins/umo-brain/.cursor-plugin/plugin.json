@@ -1,10 +1,9 @@
 {
   "name": "umo-brain",
   "version": "0.1.0",
-  "description": "DAVID brain harness — Brain MCP and brain-harness rule for organizational memory across repos and agent sessions.",
+  "description": "Brain harness — Brain MCP and brain-harness rule for shared memory across repos and agent sessions.",
   "author": {
-    "name": "UMO Platform Team",
-    "email": "devops.tech.user@umo.business"
+    "name": "UMO Platform Team"
   },
   "keywords": [
     "umo",

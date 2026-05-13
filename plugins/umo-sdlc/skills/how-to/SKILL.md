@@ -1,6 +1,6 @@
 ---
 name: how-to
-description: Human and agent entry point for UMO SDLC guidance, including repo navigation, SDLC, Spec-Driven Development (SDD), Test-Driven Development (TDD), docs and Beads planning handoff, SaaS repo discovery, plugin adoption, and repository health diagnostics. Use when users ask how to use umo-sdlc, where to find repo facts, how to plan or execute work, how to apply SDD/TDD, or how to diagnose and repair repo steering.
+description: Human and agent entry point for UMO SDLC guidance, including repo navigation, SDLC, Spec-Driven Development (SDD), Test-Driven Development (TDD), docs and Beads planning handoff, multi-service monorepo discovery, plugin adoption, and repository health diagnostics. Use when users ask how to use umo-sdlc, where to find repo facts, how to plan or execute work, how to apply SDD/TDD, or how to diagnose and repair repo steering.
 paths:
   - "**/AGENTS.md"
   - "plugins/umo-sdlc/**"
@@ -24,7 +24,7 @@ Use when a user asks:
 
 - "How do I use this plugin in this repo?"
 - "Where are docs, issues, dependencies, service facts, or decisions?"
-- "How should agents work in the SaaS repo?"
+- "How should agents work in this repo?"
 - "Help me follow SDLC, SDD, or TDD for this work."
 - "Set up/adapt this repo for `umo-sdlc`."
 - "Diagnose/heal/check our docs, planning, Beads, or agent steering."
@@ -46,9 +46,9 @@ Use when a user asks:
    Spec-Driven Development or needs a disciplined path from unclear intent to
    docs, Beads planning, test-first implementation, and evidence closeout.
 
-## SaaS Repo Navigation
+## Multi-Service Monorepo Navigation
 
-For the SaaS monorepo, gather context in this order:
+For a large multi-service monorepo, gather context in this order:
 
 1. Root `AGENTS.md` for service registry, repo conventions, git policy, and
    global commands.
@@ -93,7 +93,7 @@ Run diagnostics in observe mode by default. Check:
 - root `AGENTS.md` points to `umo-sdlc` for docs lifecycle, planning lifecycle,
   Beads planning, how-to guidance, and repo health diagnostics;
 - service `AGENTS.md` files are repo/service bindings, not copies of the full
-  company lifecycle;
+  SDLC lifecycle;
 - managed docs buckets have required structure and doc-meta;
 - proposals, ADRs, guides, references, incidents, specs, and backlogs use the
   right document type boundaries;
@@ -101,7 +101,7 @@ Run diagnostics in observe mode by default. Check:
 - Beads is initialized and usable when the repo claims Beads planning;
 - existing bead labels and descriptions do not conflict with UMO conventions;
 - repo-local git/sync/push rules are explicit and not overridden by plugin text;
-- SaaS service facts can be traced from registry to AGENTS, passport, docs,
+- service facts can be traced from registry to AGENTS, passport, docs,
   config, and dependency files.
 
 ## Safe Autofixes
@@ -143,7 +143,7 @@ For health checks, produce a concise report:
 - plugin pointers found/missing;
 - docs readiness;
 - planning/Beads readiness;
-- SaaS navigation/dependency traceability, when relevant;
+- service navigation/dependency traceability, when relevant;
 - conflicting or duplicated local guidance;
 - safe autofixes applied;
 - proposed manual fixes;

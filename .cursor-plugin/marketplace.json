@@ -1,11 +1,10 @@
 {
   "name": "umo-plugins",
   "owner": {
-    "name": "UMO Platform Team",
-    "email": "devops.tech.user@umo.business"
+    "name": "UMO Platform Team"
   },
   "metadata": {
-    "description": "UMO internal Cursor plugins — agentic lifecycle, brain harness, organizational memory"
+    "description": "Cursor plugins for agentic lifecycle, brain harness, and shared memory"
   },
   "plugins": [
     {

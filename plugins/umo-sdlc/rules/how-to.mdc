@@ -34,7 +34,7 @@ It delegates deep document work to `docs` and deep Beads planning work to
 
 ## Required Skill
 
-For how-to guidance, SaaS navigation, adoption checks, repository health
+For how-to guidance, service navigation, adoption checks, repository health
 diagnostics, safe autofixes, and report shape, load:
 
 `plugins/umo-sdlc/skills/how-to/SKILL.md`

@@ -7,7 +7,7 @@ argument-hint: "[question or repo path]"
 
 Request: $ARGUMENTS
 
-Invoke the `how-to` skill (`plugins/umo-sdlc/skills/how-to/SKILL.md`) for adoption checks, SaaS navigation, repository health diagnostics, safe autofixes, and report shape. Use this command as the friendly front door for humans and agents working with umo-sdlc.
+Invoke the `how-to` skill (`plugins/umo-sdlc/skills/how-to/SKILL.md`) for adoption checks, service navigation, repository health diagnostics, safe autofixes, and report shape. Use this command as the friendly front door for humans and agents working with umo-sdlc.
 
 ## When to use
 
@@ -15,7 +15,7 @@ Use this when a user asks:
 
 - "How do I use this plugin in this repo?"
 - "Where are docs, issues, dependencies, service facts, or decisions?"
-- "How should agents work in the SaaS repo?"
+- "How should agents work in this repo?"
 - "Help me follow SDLC, SDD, or TDD for this work."
 - "Set up / adapt this repo for umo-sdlc."
 - "Diagnose / heal / check our docs, planning, Beads, or agent steering."
@@ -29,9 +29,9 @@ Use this when a user asks:
 4. Use repo-local instructions (`AGENTS.md`, `CLAUDE.md`) for commands, service names, paths, deployment topology, git policy, and exceptions.
 5. Use `/umo-sdlc:sdd` when the user asks for Spec-Driven Development or needs a disciplined path from unclear intent to docs, planning, test-first implementation, and evidence closeout.
 
-## SaaS repo navigation
+## Multi-service monorepo navigation
 
-For the SaaS monorepo, gather context in this order:
+For a large multi-service monorepo, gather context in this order:
 
 1. Root `AGENTS.md` for service registry, repo conventions, git policy, and global commands.
 2. `services/<service>/AGENTS.md` for service stack, architecture, commands, dependencies, and sharp edges.
@@ -67,4 +67,4 @@ Ask before:
 
 ## What to do next
 
-Identify what the user is actually asking (orientation / setup / audit / planning / diagnosis), name the recommended workflow, list the files or commands to inspect, and point at the next skill or command. For health checks, produce a concise report covering adoption mode, active steering files, plugin pointers, docs readiness, planning / Beads readiness, SaaS navigation traceability, conflicting or duplicated local guidance, safe autofixes applied, proposed manual fixes, and the next recommended workflow.
+Identify what the user is actually asking (orientation / setup / audit / planning / diagnosis), name the recommended workflow, list the files or commands to inspect, and point at the next skill or command. For health checks, produce a concise report covering adoption mode, active steering files, plugin pointers, docs readiness, planning / Beads readiness, service navigation traceability, conflicting or duplicated local guidance, safe autofixes applied, proposed manual fixes, and the next recommended workflow.

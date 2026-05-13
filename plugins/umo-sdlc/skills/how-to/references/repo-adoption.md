@@ -6,10 +6,10 @@
 
 # Repo Adoption And Health
 
-`umo-sdlc` is a company plugin. Repos adopt it through thin local steering, not
-by copying plugin rules into `AGENTS.md`.
+Repos adopt `umo-sdlc` through thin local steering, not by copying plugin rules
+into `AGENTS.md`.
 
-SaaS is the reference rollout target because it has many services, multiple
+The reference rollout target is a large multi-service monorepo with multiple
 stacks, shared docs, service passports, Beads, and cross-team planning needs.
 
 ## Adoption Modes
@@ -50,7 +50,7 @@ Service steering:
 - identifies service, stack, commands, ownership, dependencies, and sharp
   edges;
 - points docs/planning/how-to work back to `umo-sdlc`;
-- does not redefine company-wide Beads labels, priorities, lifecycle phases, or
+- does not redefine plugin-wide Beads labels, priorities, lifecycle phases, or
   closeout rules.
 
 Docs readiness:
@@ -67,7 +67,7 @@ Planning readiness:
 - accepted proposals and postmortems can become bead trees;
 - labels and closeout rules do not conflict with UMO taxonomy.
 
-SaaS navigation readiness:
+Service navigation readiness:
 
 - root `AGENTS.md` service registry maps active services to passports;
 - service `AGENTS.md` and passports agree on stack, commands, deps, and owners;
@@ -97,7 +97,7 @@ Scope: <root | service | plugin>
 - Pass:
 - Gaps:
 
-### SaaS Navigation / Dependencies
+### Service Navigation / Dependencies
 - Pass:
 - Gaps:
 

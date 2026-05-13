@@ -33,7 +33,7 @@ Service/domain:
 - `svc-<service>`
 - `domain-<domain>`
 
-SaaS examples:
+Examples:
 
 - `svc-auth`
 - `svc-portal-frontend`
