@@ -3,8 +3,7 @@
   "version": "0.4.0",
   "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, Beads planning, SDLC how-to guidance, and repo health diagnostics.",
   "author": {
-    "name": "UMO Platform Team",
-    "email": "devops.tech.user@umo.business"
+    "name": "UMO Platform Team"
   },
   "keywords": [
     "umo",
