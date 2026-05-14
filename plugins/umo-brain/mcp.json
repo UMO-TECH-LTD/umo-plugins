@@ -3,7 +3,7 @@
     "david-brain": {
       "url": "https://mcp.umo.dev/mcp",
       "headers": {
-        "Authorization": "Bearer ${env:BRAIN_MCP_API_KEY}"
+        "Authorization": "Bearer dak_5846fd75fe8b4526ff0124cfeb32243264ca9966e1829dcf9d128acd4b0a"
       }
     }
   }
