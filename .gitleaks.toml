@@ -1,0 +1,68 @@
+# gitleaks config for umo-plugins repo.
+#
+# Extends gitleaks' built-in detection (AWS, GCP, GitHub, Slack, Stripe, JWT,
+# private keys, etc.) with:
+#   - a high-entropy catch-all rule for unknown token formats
+#     (catches `Bearer dak_xxx` and similar custom-prefix tokens that the
+#     default `generic-api-key` rule misses inside JSON value position)
+#   - an explicit BRAIN_MCP_API_KEY literal rule (acceptance criterion in
+#     CWN-5206 — that variable's value must never be committed)
+#
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+[extend]
+useDefault = true
+
+# ─────────────────────────────────────────────────────────────────────
+# High-entropy catch-all for non-standard token formats.
+#
+# Tuning:
+#   - 20-char floor avoids matching short identifiers
+#   - entropy 3.5 ≈ realistic threshold for 60+ char hex/base32 tokens
+#     (uniform hex maxes at ~4.0; ci-cd-templates' 4.3 misses many real tokens
+#     including the CWN-5206 acceptance test value `dak_<64-hex>`)
+#   - allowlist excludes expected high-entropy non-secrets
+# ─────────────────────────────────────────────────────────────────────
+
+[[rules]]
+  id          = "high-entropy-string"
+  description = "Generic high-entropy token (potential secret)"
+  regex       = '''[A-Za-z0-9+/=_\-]{20,}'''
+  entropy     = 3.5
+  tags        = ["entropy", "generic"]
+
+  [rules.allowlist]
+    description = "Expected high-entropy non-secrets"
+    regexes = [
+      # Env-var placeholders used in mcp.json (e.g. "${env:BRAIN_MCP_API_KEY}")
+      '''\$\{?env:[A-Z_][A-Z0-9_]*\}?''',
+      # GitLab CI variable references
+      '''\$\{?CI_[A-Z0-9_]+\}?''',
+      # Docker image content digests
+      '''sha256:[a-f0-9]{64}''',
+      # Git commit SHAs in URLs / docs
+      '''(?i)(commit|sha)[/=:][a-f0-9]{40}''',
+    ]
+    paths = [
+      # Self-references: scanner config files contain rule IDs and regex
+      # patterns that look high-entropy but are detection rules, not secrets.
+      '''\.gitleaks\.toml''',
+      '''trivy-secret\.yaml''',
+    ]
+
+# ─────────────────────────────────────────────────────────────────────
+# Explicit literal check for BRAIN_MCP_API_KEY value committed to repo.
+# Acceptance criterion in CWN-5206.
+# ─────────────────────────────────────────────────────────────────────
+
+[[rules]]
+  id          = "brain-mcp-api-key-literal"
+  description = "BRAIN_MCP_API_KEY literal must never be committed (env placeholder only)"
+  regex       = '''(?i)BRAIN[_-]?MCP[_-]?API[_-]?KEY\s*[=:]\s*['"]?[A-Za-z0-9._\-]{16,}['"]?'''
+  tags        = ["umo-plugins", "brain-mcp"]
+
+  [rules.allowlist]
+    description = "Env placeholder is fine — only literal values block"
+    regexes = [
+      '''\$\{?env:BRAIN_MCP_API_KEY\}?''',
+    ]
