@@ -4,7 +4,7 @@
     "name": "UMO Platform Team"
   },
   "metadata": {
-    "description": "Claude Code plugins for agentic SDLC, brain harness, and shared memory. Mirrors the Cursor/Codex bundle in this repo."
+    "description": "Claude Code plugins for agentic SDLC, brain harness, Effect-TS awareness, and shared memory. Mirrors the Cursor/Codex bundle in this repo."
   },
   "plugins": [
     {
@@ -30,6 +30,18 @@
       "license": "UNLICENSED",
       "category": "productivity",
       "keywords": ["umo", "sdlc", "docs", "service-passport", "adr", "proposal", "beads", "planning", "sdd", "tdd"]
+    },
+    {
+      "name": "umo-effect",
+      "source": "./plugins/umo-effect",
+      "description": "Effect-TS — always-on awareness rule plus effect-ts skill (guides and references). Load the skill when work involves Effect.",
+      "version": "0.1.0",
+      "author": {
+        "name": "UMO Platform Team"
+      },
+      "license": "UNLICENSED",
+      "category": "productivity",
+      "keywords": ["umo", "effect", "effect-ts", "typescript", "schema", "@effect"]
     }
   ]
 }

@@ -1,0 +1,34 @@
+{
+  "name": "umo-effect",
+  "version": "0.1.0",
+  "description": "Effect-TS — always-on effect-awareness rule plus bundled effect-ts skill (guides and references).",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": [
+    "umo",
+    "umo-effect",
+    "effect",
+    "effect-ts",
+    "typescript",
+    "schema",
+    "@effect"
+  ],
+  "license": "UNLICENSED",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "UMO Effect",
+    "shortDescription": "Always-on Effect awareness and effect-ts skill.",
+    "longDescription": "Ships an always-apply effect-awareness rule so agents know when to load the bundled effect-ts skill, follow its guides and research order, and use local Effect source when present. Use the skill for idiomatic patterns; skip Effect patterns when the task is unrelated.",
+    "developerName": "UMO Platform Team",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read"],
+    "defaultPrompt": [
+      "If this task involves Effect, open skills/effect-ts/SKILL.md and the relevant references under skills/effect-ts/references/ first.",
+      "Confirm local Effect source via setup.md or workspace clone before deep API research."
+    ],
+    "brandColor": "#2E12FF",
+    "composerIcon": "./assets/umo.svg",
+    "logo": "./assets/umo.svg"
+  }
+}
