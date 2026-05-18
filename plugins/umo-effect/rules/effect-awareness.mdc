@@ -1,0 +1,21 @@
+---
+description: Always-on Effect-TS awareness — orient agents toward the bundled effect-ts skill and local Effect source when work involves Effect.
+alwaysApply: true
+---
+
+# Effect awareness
+
+This rule stays in context so Effect guidance is **reachable without a glob match**.
+
+## When it matters
+
+If the task touches **Effect**, **`effect` / `@effect/*` packages**, **Effect Schema**, **services / layers**, **fibers / streams**, or **typed error handling**, do the following **before** improvising from generic tutorials or web search:
+
+1. Load **`skills/effect-ts/SKILL.md`** (paths relative to the `umo-effect` plugin root).
+2. Use the guides under **`skills/effect-ts/references/`** as the first stop.
+3. Follow the skill’s research order: guides → existing project patterns → **local Effect source** (workspace monorepo and/or `./.repos/effect` per **`skills/effect-ts/references/setup.md`**) when you need signatures or implementation detail.
+
+## When it does not apply
+
+If the current work is **not** Effect-related and the codebase has no Effect dependency for that area, treat this as **background context only** and do not force Effect patterns.
+

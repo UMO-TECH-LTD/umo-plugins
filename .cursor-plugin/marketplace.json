@@ -4,7 +4,7 @@
     "name": "UMO Platform Team"
   },
   "metadata": {
-    "description": "Cursor plugins for agentic lifecycle, brain harness, and shared memory"
+    "description": "Cursor plugins for agentic lifecycle, brain harness, Effect-TS awareness, and shared memory"
   },
   "plugins": [
     {
@@ -16,6 +16,11 @@
       "name": "umo-brain",
       "source": "./plugins/umo-brain",
       "description": "DAVID brain harness — Brain MCP (david-brain) and brain-harness rule; organizational memory for agents"
+    },
+    {
+      "name": "umo-effect",
+      "source": "./plugins/umo-effect",
+      "description": "Effect-TS — always-on effect-awareness rule and effect-ts skill (guides + references) for idiomatic Effect."
     }
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "name": "umo-effect",
+  "version": "0.1.0",
+  "description": "Effect-TS — always-on effect-awareness rule and bundled effect-ts skill (guides and references).",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": [
+    "umo",
+    "umo-effect",
+    "effect",
+    "effect-ts",
+    "typescript",
+    "schema",
+    "@effect"
+  ],
+  "license": "UNLICENSED",
+  "skills": "./skills"
+}
