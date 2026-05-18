@@ -9,17 +9,17 @@
   "plugins": [
     {
       "name": "umo-sdlc",
-      "source": "./plugins/umo-sdlc",
+      "source": "plugins/umo-sdlc",
       "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, and one compact docs skill with references/assets for setup, audit, and lifecycle."
     },
     {
       "name": "umo-brain",
-      "source": "./plugins/umo-brain",
+      "source": "plugins/umo-brain",
       "description": "DAVID brain harness — Brain MCP (david-brain) and brain-harness rule; organizational memory for agents"
     },
     {
       "name": "umo-effect",
-      "source": "./plugins/umo-effect",
+      "source": "plugins/umo-effect",
       "description": "Effect-TS — always-on effect-awareness rule and effect-ts skill (guides + references) for idiomatic Effect."
     }
   ]
