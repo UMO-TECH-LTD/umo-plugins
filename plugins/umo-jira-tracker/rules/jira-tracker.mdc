@@ -25,6 +25,12 @@ This rule is active because `.umo/jira-tracker.json` is present. It reminds agen
 - **Commit:** `type(scope): description` (Conventional Commits) — include JIRA key in footer or branch name.
 - **Forbidden:** branches without a JIRA key, names like `tmp`/`wip`/`test`, direct commits to `main`/`dev`/`release`, MRs without description or JIRA link.
 
+## MR creation rule
+
+**Always use `/umo-jira-tracker:mr` to create Merge Requests.** Never call `glab mr create` or any GitLab MCP `create_merge_request` directly. The `/mr` command is the only entry point — it handles branch setup, commit organisation, MR preview, assignee, description template, and JIRA sync as a single approved flow. Invoking the underlying `gitlab-mr` skill directly bypasses these steps and produces inconsistent MRs (wrong title format, missing assignee, no JIRA update).
+
+If you are mid-task and need to ship code to a branch, follow the phases in `commands/umo-jira-tracker:mr.md` rather than shelling out to `glab mr create` yourself.
+
 ## JIRA mutation rules
 
 - **Never mutate JIRA without an explicit developer approval gate.** Always preview the comment body, the transition, or the new issue payload before calling any Atlassian MCP write tool.

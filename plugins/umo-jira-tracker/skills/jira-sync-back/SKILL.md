@@ -218,6 +218,37 @@ CallMcpTool -> Atlassian / createJiraIssue
 
 On success, receive the new issue key (e.g. `CWN-5678`).
 
+### Sprint assignment (create-then-edit pattern)
+
+`customfield_10020` (sprint) is **silently ignored** by the Jira REST API when included in the `createJiraIssue` payload — it must be set in a separate edit call immediately after creation.
+
+**Resolve sprint ID (in order):**
+
+1. **Parent sprint** — if a parent key was provided, fetch it and read `customfield_10020[0].id`:
+   ```
+   CallMcpTool -> Atlassian / getJiraIssue
+     cloudId: "{cloudId}"
+     issueIdOrKey: "{PARENT-KEY}"
+   ```
+   Extract `fields.customfield_10020[0].id` from the response.
+2. **Config default** — if `jira.defaultSprintId` exists in `.umo/jira-tracker.json`, use that value.
+3. **Skip** — if neither source has a sprint ID, omit the edit call. The issue will appear in the backlog and can be moved to a sprint manually on the board.
+
+**If a sprint ID was resolved**, call immediately after creation (no extra preview needed — this is a housekeeping step):
+
+```
+CallMcpTool -> Atlassian / editJiraIssue
+  cloudId: "{cloudId}"
+  issueIdOrKey: "{NEW-KEY}"
+  fields: {
+    "customfield_10020": { "id": {sprintId} }
+  }
+```
+
+Report the outcome:
+- Success: `Sprint assigned: {sprint name} (id: {sprintId})`
+- Error (e.g. sprint closed): surface the error and instruct the developer to assign the sprint manually on the board.
+
 ### Round-trip to Beads
 
 After successful creation, immediately upsert the new issue into beads using the same logic as `jira-sync` Phase 3:

@@ -114,6 +114,24 @@ Start working on it now? Run:
 
 ---
 
+## Sprint field constraint
+
+`customfield_10020` (sprint) **cannot be set during issue creation**. The Jira REST API silently ignores it in the `createJiraIssue` payload without returning an error.
+
+**Always use the create-then-edit pattern** (implemented in Operation D of `jira-sync-back/SKILL.md`):
+
+1. Create the issue without a sprint field.
+2. Immediately call `editJiraIssue` with `customfield_10020: { "id": {sprintId} }`.
+
+Sprint ID resolution order:
+1. Inherit from the parent issue's active sprint (`fields.customfield_10020[0].id`).
+2. Fall back to `jira.defaultSprintId` in `.umo/jira-tracker.json`.
+3. Skip if neither is available.
+
+**Never include `customfield_10020` in a `createJiraIssue` call** — it will be silently dropped and you will not know the issue landed in the backlog instead of the intended sprint.
+
+---
+
 ## Validation checklist (run before every createJiraIssue call)
 
 - [ ] Issue type is known (Sub-task / Task / Story / Bug / Epic).
@@ -122,3 +140,4 @@ Start working on it now? Run:
 - [ ] Epic only proceeds after `create epic` phrase.
 - [ ] Justification appended to description if unlinked.
 - [ ] Developer saw and approved the creation preview (Operation D in jira-sync-back SKILL.md).
+- [ ] Sprint field will be set via a separate `editJiraIssue` call after creation (never in `createJiraIssue`).

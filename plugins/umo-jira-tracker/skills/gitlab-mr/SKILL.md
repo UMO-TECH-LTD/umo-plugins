@@ -5,7 +5,11 @@ description: Lower-level reference skill for creating GitLab merge requests. Cov
 
 # GitLab Merge Requests via glab (MCP fallback)
 
-Use when the GitLab MCP is unavailable or fails, and the developer wants to create or inspect merge requests from the terminal. Also used by `/umo-jira-tracker:mr` as the **preferred CLI fallback** after MCP.
+> **Do not call this skill directly to create an MR.**
+> MR creation must always go through the `/umo-jira-tracker:mr` command flow (`commands/umo-jira-tracker:mr.md`), which handles branch setup, commit planning, full preview, assignee, description template, and JIRA sync.
+> This skill is invoked **only** from Phase 6 of that command as the glab fallback when GitLab MCP is unavailable. Using it outside of that flow produces MRs with wrong title format, missing assignee, and no JIRA update.
+
+Use when the GitLab MCP is unavailable or fails, and the `/umo-jira-tracker:mr` command flow has already reached Phase 6. Also used by `/umo-jira-tracker:mr` as the **preferred CLI fallback** after MCP.
 
 ## Naming standard
 
@@ -53,13 +57,14 @@ If one exists, show the web URL (`glab mr view <iid> --web` or paste URL from li
 
 ## Create MR (non-interactive)
 
-Replace title, branch, and description as needed.
+Replace title, branch, and description as needed. Always include `--assignee` using `user.gitlabUsername` from `.umo/jira-tracker.json` — GitLab does **not** auto-assign the MR author as the assignee.
 
 ```bash
 glab mr create \
   --target-branch {target-branch} \
   --source-branch "$(git branch --show-current)" \
   --title "{JIRA-KEY}: {Short description}" \
+  --assignee {user.gitlabUsername} \
   --description "$(cat <<'EOF'
 ## JIRA Ticket
 [{JIRA-KEY}](https://umotech.atlassian.net/browse/{JIRA-KEY})
@@ -109,6 +114,7 @@ glab mr list --source-branch "$(git branch --show-current)"
 | Wrong project | `glab mr create -R group/subgroup/repo ...` |
 | Editor opens | Pass `-d "..."` and `--no-editor` |
 | Can't find project | Use `glab api "projects?search=<name>&membership=true"` |
+| MR has no assignee | Re-assign with `glab mr update <iid> --assignee <gitlabUsername>`; add `--assignee` to the create command next time |
 
 ## Relationship to `/umo-jira-tracker:mr`
 
