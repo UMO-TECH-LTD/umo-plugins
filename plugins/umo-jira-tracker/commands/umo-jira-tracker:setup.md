@@ -1,5 +1,5 @@
 ---
-description: First-run setup wizard — verify tools (bd, glab, Atlassian MCP), collect per-repo config, and write .umo/jira-tracker.json. Safe to re-run to update values.
+description: First-run setup wizard — verify tools (bd, glab, Atlassian MCP), collect per-repo config, auto-resolve your JIRA account ID and GitLab user ID, and write .umo/jira-tracker.json. Safe to re-run to update values.
 ---
 
 # /umo-jira-tracker:setup
