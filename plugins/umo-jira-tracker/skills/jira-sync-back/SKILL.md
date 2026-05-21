@@ -1,6 +1,6 @@
 ---
 name: jira-sync-back
-description: Single owner of all JIRA mutations — comments, transitions, description edits, and issue creation. Always previews the payload and waits for developer approval. Used by /mr, /close, /create, and inline sub-task prompts in /work. Enforces the creation-policy linkage matrix.
+description: Single owner of all JIRA mutations — comments, transitions, description edits, and issue creation. Always previews the payload and waits for developer approval. Used by /mr, /close, /create, /work (resume from Code Review), and inline sub-task prompts in /work. Enforces the creation-policy linkage matrix.
 paths:
   - ".umo/jira-tracker.json"
 ---
@@ -62,7 +62,9 @@ Before posting, check existing comments via `getJiraIssue` and scan for a commen
 
 ## Operation B — Transition JIRA issue
 
-Used by: `/mr` (→ `transitionOnMr`), `/close` (→ `transitionOnClose`).
+Used by: `/close` (→ `transitionOnClose`), optional post-create transition in `/create`.
+
+> **Not used by `/mr`.** MR creation never transitions JIRA status.
 
 ### Resolve transition ID
 
@@ -98,6 +100,57 @@ CallMcpTool -> Atlassian / transitionJiraIssue
   issueIdOrKey: "{KEY}"
   transition: { "id": "{transition-id}" }
 ```
+
+---
+
+## Operation B-multi — Multi-step transition
+
+Used by: `/work` when resuming a ticket that has no direct path to **In Progress** (e.g. CWN **Code Review**).
+
+Load `references/transitions.md` → **Multi-step workarounds** section. Match project key + current status + target status.
+
+### Known sequences
+
+| Project | From status | To status | Steps |
+|---------|-------------|-----------|-------|
+| CWN | Code Review | In Progress | 1. Move To Do (id **9**) → To do<br>2. Start progress (id **11**) → In Progress |
+
+If the issue is already at an intermediate status after step 1 (e.g. **To do**), skip completed steps and continue from the next cached transition.
+
+### Preview
+
+Show all steps in one approval gate:
+
+```
+About to transition {KEY} from "{current status}" to "{target status}" ({N} steps):
+
+  Step 1: {transition name} (id {id}) → {intermediate status}
+  Step 2: {transition name} (id {id}) → {target status}
+
+Proceed? (yes/no)
+```
+
+### Execute (on yes)
+
+Run each `transitionJiraIssue` call **in order**. After each step, optionally re-fetch the issue (`getJiraIssue`) to confirm the status before the next step — required if a step fails or the workflow differs from cache.
+
+```
+CallMcpTool -> Atlassian / transitionJiraIssue
+  cloudId: "{cloudId}"
+  issueIdOrKey: "{KEY}"
+  transition: { "id": "{step-1-id}" }
+
+// after step 1 succeeds
+
+CallMcpTool -> Atlassian / transitionJiraIssue
+  cloudId: "{cloudId}"
+  issueIdOrKey: "{KEY}"
+  transition: { "id": "{step-2-id}" }
+```
+
+If any step fails, stop and report which step succeeded and which failed. Do not claim the bead until the developer confirms how to proceed.
+
+If the project/status is not in the cache, fall back to `getTransitionsForJiraIssue`, build a step plan with the developer, and suggest updating `references/transitions.md`.
 
 ---
 
@@ -283,3 +336,14 @@ Both previews shown together before any action. Developer can approve both, appr
 3. Preview + create (Operation D).
 4. Round-trip to Beads.
 5. Optionally transition to `In Progress` if the developer is starting work immediately (ask).
+
+### `/work` resume flow (Code Review → In Progress)
+
+When `/work` loads a ticket whose JIRA status is **Code Review** (CWN) or another status with a documented multi-step path to **In Progress**:
+
+1. Present context (via `jira-bead-bridge` Step 2).
+2. Offer: *"This ticket is in Code Review. Transition to In Progress before claiming?"* — default **yes** when the developer said they want to resume work.
+3. On yes: Operation B-multi (CWN: Move To Do → Start progress).
+4. Claim bead and continue the discuss loop.
+
+Do **not** transition silently — always show the multi-step preview and wait for approval.

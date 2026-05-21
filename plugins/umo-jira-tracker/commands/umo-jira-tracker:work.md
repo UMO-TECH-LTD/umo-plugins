@@ -38,3 +38,4 @@ Extract from free-form input:
 - If the bead for the given JIRA key doesn't exist locally, prompt to run `/umo-jira-tracker:sync` first.
 - This command does not implement the feature — it plans and documents it. Start implementation after the bead is claimed.
 - Use `/umo-jira-tracker:create sub-task --parent <KEY>` during the discussion for any discovered sub-tasks.
+- **CWN Code Review:** If the ticket is in Code Review, `/work` offers a two-step JIRA transition (Move To Do → Start progress) so you can resume implementation without manual board moves.

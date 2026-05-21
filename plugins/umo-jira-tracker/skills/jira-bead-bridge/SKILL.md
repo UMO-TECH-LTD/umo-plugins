@@ -54,6 +54,23 @@ Notes (from bead):
 Claim this bead and start working? (yes/no)
 ```
 
+### Step 2b — Resume from Code Review (CWN)
+
+If JIRA status is **Code Review** and the project key is **CWN** (or `references/transitions.md` documents a multi-step path from the current status to **In Progress**):
+
+```
+This ticket is in Code Review. Resuming work requires a two-step JIRA transition:
+  1. Move To Do (id 9)
+  2. Start progress (id 11)
+
+Transition to In Progress before claiming? (yes/no)
+```
+
+- **yes** → delegate to `jira-sync-back` **Operation B-multi** (single preview for both steps). On success, continue to Step 3.
+- **no** → continue to Step 3 without changing JIRA status (bead can still be claimed locally).
+
+For other blocking statuses (e.g. **Ready for Testing**, **In Testing**), mention the current status and ask whether to transition manually on the board — do not auto-transition without a cached multi-step path.
+
 ## Step 3 — Claim
 
 On yes:

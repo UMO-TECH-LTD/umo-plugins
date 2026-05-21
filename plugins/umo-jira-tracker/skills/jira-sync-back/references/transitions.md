@@ -65,6 +65,8 @@ Workflow type: **custom dev workflow** with a QA lane.
 > Workaround: `Move To Do` (id 9) → `Start progress` (id 11).
 > Two separate `transitionJiraIssue` calls required.
 
+**Agent shortcut:** When the developer runs `/umo-jira-tracker:work` on a CWN ticket in **Code Review**, offer this sequence automatically via `jira-sync-back` Operation B-multi before claiming the bead.
+
 ---
 
 ## FFR — Frogfort LT RSD
