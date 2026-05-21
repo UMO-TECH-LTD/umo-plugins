@@ -42,6 +42,18 @@
       "license": "UNLICENSED",
       "category": "productivity",
       "keywords": ["umo", "effect", "effect-ts", "typescript", "schema", "@effect"]
+    },
+    {
+      "name": "umo-jira-tracker",
+      "source": "./plugins/umo-jira-tracker",
+      "description": "UMO JIRA Tracker — links JIRA tickets to a local Beads database, automates sprint sync, drives commit/MR creation with STD-JIRA naming, and syncs outcomes back to JIRA.",
+      "version": "0.1.0",
+      "author": {
+        "name": "UMO Platform Team"
+      },
+      "license": "UNLICENSED",
+      "category": "productivity",
+      "keywords": ["umo", "jira", "beads", "bd", "gitlab", "glab", "sprint", "sync", "conventional-commits", "std-jira"]
     }
   ]
 }

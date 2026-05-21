@@ -1,0 +1,59 @@
+{
+  "name": "umo-jira-tracker",
+  "version": "0.1.0",
+  "description": "UMO JIRA Tracker — links JIRA tickets to a local Beads database, automates sprint sync, drives commit/MR creation with STD-JIRA naming, and syncs results back to JIRA on bead close or MR creation.",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": [
+    "umo",
+    "umo-jira-tracker",
+    "jira",
+    "beads",
+    "bd",
+    "gitlab",
+    "glab",
+    "mr",
+    "sprint",
+    "sync",
+    "conventional-commits",
+    "std-jira"
+  ],
+  "license": "UNLICENSED",
+  "logo": "./assets/umo.svg",
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "umoComposition": {
+    "apiVersion": "umo.plugins/v1",
+    "core": false,
+    "precedence": 25,
+    "dependsOn": [],
+    "optionalDependsOn": ["umo-sdlc"],
+    "owns": [
+      "jira-bead-mapping",
+      "jira-sync",
+      "jira-tracker-config",
+      "mr-from-bead",
+      "jira-syncback",
+      "jira-issue-creation"
+    ]
+  },
+  "interface": {
+    "displayName": "UMO JIRA Tracker",
+    "shortDescription": "Sprint sync, JIRA↔Beads bridge, commit/MR creation, and JIRA sync-back.",
+    "longDescription": "Automates the daily developer JIRA workflow: syncs your unresolved sprint tickets into a local Beads database, maps Epics/Stories/Tasks into the bead hierarchy, guides bead-by-bead work with AC drafting, creates GitLab MRs via glab (or GitLab MCP) using STD-JIRA naming, and syncs outcomes (MR links, transitions, new sub-tasks) back to JIRA — all with explicit approval gates.",
+    "developerName": "UMO Platform Team",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "defaultPrompt": [
+      "Run /umo-jira-tracker:setup to configure this repo.",
+      "Run /umo-jira-tracker:sync to pull my unresolved JIRA tickets into Beads.",
+      "Run /umo-jira-tracker:work CWN-1234 to start working on a ticket.",
+      "Run /umo-jira-tracker:mr to create a GitLab MR and update JIRA.",
+      "Run /umo-jira-tracker:close to close the bead and transition JIRA."
+    ],
+    "brandColor": "#1F6FEB",
+    "composerIcon": "./assets/umo.svg",
+    "logo": "./assets/umo.svg"
+  }
+}

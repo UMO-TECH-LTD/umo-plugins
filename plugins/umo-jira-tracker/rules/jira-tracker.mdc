@@ -1,0 +1,49 @@
+---
+description: UMO JIRA Tracker — bead conventions, JIRA mutation approval gate, title format, label schema, and naming standard reference. Active when .umo/jira-tracker.json is present in the repo.
+globs:
+  - ".umo/jira-tracker.json"
+  - "**/.beads/**"
+---
+
+# UMO JIRA Tracker — Orientation
+
+This rule is active because `.umo/jira-tracker.json` is present. It reminds agents of the key conventions.
+
+## Bead conventions
+
+- **Title format**: `[{JIRA-KEY}] {JIRA summary}` — do not deviate.
+- **Labels**: every synced bead carries `jira:{KEY}`. Look up beads via `bd list --label "jira:{KEY}" --json`.
+- **Description zones**: the description has a JIRA-sourced zone (above `## Notes`) and a user/agent Notes zone (below `## Notes`). Sync only overwrites the JIRA zone; never touch `## Notes` and below.
+- **Parent linkage**: Sub-tasks → Story-epic bead; Task/Bug → Epic-bead; Story → Epic-bead. Use `bd dep add` or `--parent` to express this.
+
+## Naming standard
+
+> Based on the internal Confluence standard **"STD-JIRA and GitLab Branch/MR Naming"**.
+
+- **Branch:** `{type}/{JIRA-KEY}-{short-description}` — types: `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build`; short-description 2–5 words kebab-case. (e.g. `feat/CWN-1234-add-kafka-retry`)
+- **MR title:** `{JIRA-KEY}: {Short description}` — JIRA key at start triggers GitLab auto-linking; conventional type prefix is **not** required in MR titles. (e.g. `CWN-1234: Add Kafka retry`)
+- **Commit:** `type(scope): description` (Conventional Commits) — include JIRA key in footer or branch name.
+- **Forbidden:** branches without a JIRA key, names like `tmp`/`wip`/`test`, direct commits to `main`/`dev`/`release`, MRs without description or JIRA link.
+
+## JIRA mutation rules
+
+- **Never mutate JIRA without an explicit developer approval gate.** Always preview the comment body, the transition, or the new issue payload before calling any Atlassian MCP write tool.
+- **JIRA Done is one-way**: the sync closes beads when JIRA is Done, but never re-opens a bead that the developer closed locally.
+- **Sub-tasks require a parent — always.** No override exists for this rule.
+- **Orphan issues**: any non-Epic creation without a parent requires the exact phrase `create unlinked` plus a justification. Epics require `create epic`.
+
+## Available commands
+
+| Command | Purpose |
+|---------|---------|
+| `/umo-jira-tracker:setup` | First-run wizard |
+| `/umo-jira-tracker:sync` | JIRA → Beads sync |
+| `/umo-jira-tracker:work [KEY]` | Claim + discuss |
+| `/umo-jira-tracker:create [type]` | Create JIRA issue (linked) |
+| `/umo-jira-tracker:commit` | Conventional commits |
+| `/umo-jira-tracker:mr` | Create MR + sync JIRA |
+| `/umo-jira-tracker:close` | Close bead + JIRA Done |
+
+## Config location
+
+`.umo/jira-tracker.json` — run `/umo-jira-tracker:setup` to create or update.

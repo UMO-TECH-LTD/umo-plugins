@@ -21,6 +21,11 @@
       "name": "umo-effect",
       "source": "plugins/umo-effect",
       "description": "Effect-TS — always-on effect-awareness rule and effect-ts skill (guides + references) for idiomatic Effect."
+    },
+    {
+      "name": "umo-jira-tracker",
+      "source": "plugins/umo-jira-tracker",
+      "description": "UMO JIRA Tracker — links JIRA tickets to a local Beads database, automates sprint sync, drives commit/MR creation with STD-JIRA naming, and syncs outcomes back to JIRA."
     }
   ]
 }
