@@ -9,6 +9,8 @@
 #
 # plugins/umo-effect is bundled Effect skill text + plugin metadata — high-entropy
 # noise from path-like tokens; excluded globally (do not commit real secrets there).
+# plugins/umo-jira-tracker is documentation-heavy (MCP tool names, file-path
+# examples, Confluence link); same exclusion (do not commit real secrets there).
 #
 # Docs: https://github.com/gitleaks/gitleaks#configuration
 
@@ -16,9 +18,10 @@
 useDefault = true
 
 [allowlist]
-description = "umo-effect bundle (agent docs / manifests; not for credentials)"
+description = "Documentation-only plugin bundles (high-entropy noise from doc tokens)"
 paths = [
   '''plugins/umo-effect/.*''',
+  '''plugins/umo-jira-tracker/.*''',
 ]
 
 # ─────────────────────────────────────────────────────────────────────
@@ -39,6 +42,7 @@ paths = [
       '''\$\{?CI_[A-Z0-9_]+\}?''',
       '''sha256:[a-f0-9]{64}''',
       '''(?i)(commit|sha)[/=:][a-f0-9]{40}''',
+      '''plugins/umo-[a-z0-9\-]+''',
     ]
     paths = [
       '''\.gitleaks\.toml''',

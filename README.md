@@ -5,6 +5,7 @@ Plugin marketplace shipping plugins to **Cursor**, **Codex**, and **Claude Code*
 - **`umo-brain`** — Brain MCP (`david-brain`) plus the `brain-harness` rule / skill / SessionStart hook for persistent memory across agent sessions.
 - **`umo-sdlc`** — Markdown-first docs buckets, typed document lifecycles, service passports, `service.catalog.json` sidecars, Beads planning, and SDD/TDD routing. Ships skills (`docs`, `planning`, `how-to`) and slash commands (`/sdd`, `/docs`, `/planning`, `/how-to`).
 - **`umo-effect`** — **Effect-TS**: always-on **`effect-awareness`** rule plus the **`effect-ts`** skill (`skills/effect-ts/`, guides under `references/`). Load the skill when work involves Effect; the rule keeps orientation in context.
+- **`umo-jira-tracker`** — Automates the daily JIRA developer workflow: syncs unresolved tickets into a local Beads database (Story-as-epic mapping), drives bead-by-bead work with AC refinement, creates GitLab MRs via `glab`/GitLab MCP using STD-JIRA naming, and syncs outcomes (MR links, transitions, new sub-tasks) back to JIRA with approval gates. Ships skills (`jira-tracker-setup`, `jira-sync`, `jira-bead-bridge`, `gitlab-mr`, `jira-sync-back`) and slash commands (`/setup`, `/sync`, `/work`, `/create`, `/commit`, `/mr`, `/close`).
 
 | Host | Marketplace file | Plugin manifest | MCP config |
 |---|---|---|---|
@@ -97,11 +98,18 @@ Parses every manifest, checks SKILL/command frontmatter, and runs `claude plugin
 │   │   ├── skills/{docs,planning,how-to}/
 │   │   ├── commands/{sdd,docs,planning,how-to}.md
 │   │   └── rules/{docs,planning,how-to,sdd}.mdc
-│   └── umo-effect/
+│   ├── umo-effect/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── .cursor-plugin/plugin.json
+│   │   ├── .codex-plugin/plugin.json
+│   │   ├── skills/effect-ts/
+│   │   └── rules/effect-awareness.mdc
+│   └── umo-jira-tracker/
 │       ├── .claude-plugin/plugin.json
 │       ├── .cursor-plugin/plugin.json
 │       ├── .codex-plugin/plugin.json
-│       ├── skills/effect-ts/
-│       └── rules/effect-awareness.mdc
+│       ├── skills/{jira-tracker-setup,jira-sync,jira-bead-bridge,gitlab-mr,jira-sync-back}/
+│       ├── commands/{setup,sync,work,create,commit,mr,close}.md
+│       └── rules/jira-tracker.mdc
 └── scripts/validate-claude.sh
 ```
