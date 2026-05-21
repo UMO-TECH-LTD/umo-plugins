@@ -10,6 +10,7 @@ paths:
 This skill is the **single chokepoint** for every mutation sent back to JIRA. Nothing is written to JIRA without showing the developer a preview and receiving explicit approval.
 
 Load `references/creation-policy.md` when any issue creation is requested.
+Load `references/transitions.md` for any status transition — use cached IDs to avoid a live `getTransitionsForJiraIssue` call when the project is known.
 
 ## Shared prerequisites
 
@@ -65,13 +66,21 @@ Used by: `/mr` (→ `transitionOnMr`), `/close` (→ `transitionOnClose`).
 
 ### Resolve transition ID
 
+**Step 1 — Check cache first.** Load `references/transitions.md` and look up the project key and configured transition name (e.g. `"In Review"` or `"Done"`). Use the cached transition ID if found — skip the live API call.
+
+**Step 2 — Partial name match.** If the configured name does not exactly match a cached entry, try case-insensitive partial matching (e.g. `"in review"` → `"To Review"` for CWN). Always confirm the match with the developer before executing.
+
+**Step 3 — Live fallback.** Only call `getTransitionsForJiraIssue` when the project is not in `references/transitions.md` or when a previously cached ID returns an error:
+
 ```
 CallMcpTool -> Atlassian / getTransitionsForJiraIssue
   cloudId: "{cloudId}"
   issueIdOrKey: "{KEY}"
 ```
 
-Find the transition whose `name` matches the configured value (e.g. `"In Review"` or `"Done"`). If no match, list available transitions and ask the developer to pick one.
+After a successful live lookup, note the new transition IDs in your response so a developer or agent can update `references/transitions.md`.
+
+If no match is found even after live lookup, list available transitions and ask the developer to pick one.
 
 ### Preview
 
