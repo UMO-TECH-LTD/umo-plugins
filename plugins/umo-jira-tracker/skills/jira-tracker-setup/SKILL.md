@@ -72,9 +72,13 @@ Current config (.umo/jira-tracker.json):
   gitlab.projectId       = 110
   gitlab.targetBranch    = dev
   gitlab.mrTool          = glab
+  user.jiraDisplayName   = Jane Doe (712020:abc123...)
+  user.gitlabUsername    = @jane.doe (id: 4567)
 
 Update any values? (yes/no — defaults to no)
 ```
+
+When re-running setup with `--force` or when the user explicitly asks to refresh identity, re-run Step 5 to fetch fresh JIRA and GitLab user data.
 
 If creating fresh, ask each question with a sensible default shown:
 
@@ -124,7 +128,60 @@ glab api "projects?search=<repo-name>&membership=true" | python3 -c "import json
 
 Present the matches and ask the developer to confirm. On confirmation, update `gitlab.projectId` in the config. Persist with another approval gate.
 
-## Step 5 — Final report
+## Step 5 — Resolve user identity (automatic)
+
+Fetch the developer's JIRA account ID and GitLab user information automatically. This enables auto-assignment of tickets and MRs without prompting.
+
+### JIRA account ID
+
+```
+CallMcpTool -> Atlassian / getAccessibleAtlassianResources
+```
+
+Then fetch the current user's profile:
+
+```
+CallMcpTool -> Atlassian / getJiraIssue
+  cloudId: "{cloudId}"
+  issueIdOrKey: "myself"
+```
+
+If the Atlassian MCP exposes a `myself` or `currentUser` endpoint, use it. Otherwise search for the current user via a JQL query:
+
+```
+CallMcpTool -> Atlassian / searchJiraIssuesUsingJql
+  cloudId: "{cloudId}"
+  jql: "assignee = currentUser() ORDER BY created DESC"
+  maxResults: 1
+  fields: ["assignee"]
+```
+
+Extract `assignee.accountId` and `assignee.displayName` from the result.
+
+### GitLab user info
+
+```bash
+glab api user
+```
+
+Extract `id` (numeric GitLab user ID) and `username` from the JSON response.
+
+### Store identity
+
+Add to the config object (do not prompt — this is automatic):
+
+```json
+"user": {
+  "jiraAccountId": "{accountId}",
+  "jiraDisplayName": "{displayName}",
+  "gitlabUserId": {numericId},
+  "gitlabUsername": "{username}"
+}
+```
+
+If either lookup fails (MCP unavailable, `glab` not authed), set the corresponding fields to `null` and note it in the final report. The plugin works without these values — auto-assignment is skipped when the fields are null.
+
+## Step 6 — Final report
 
 ```
 Setup complete!
@@ -134,6 +191,10 @@ Setup complete!
   glab:    <version>, authenticated ✓
   Atlassian MCP: connected         ✓
   GitLab MCP: <connected|not configured — glab fallback active>
+
+  User identity:
+    JIRA:   {jiraDisplayName} ({jiraAccountId})
+    GitLab: @{gitlabUsername} (id: {gitlabUserId})
 
 Next steps:
   /umo-jira-tracker:sync       Pull your unresolved JIRA tickets into Beads
@@ -162,6 +223,12 @@ Next steps:
     "titleFormat": "[{key}] {summary}",
     "epicTypes": ["Epic", "Story"],
     "taskTypes": ["Task", "Bug", "Sub-task"]
+  },
+  "user": {
+    "jiraAccountId": null,
+    "jiraDisplayName": null,
+    "gitlabUserId": null,
+    "gitlabUsername": null
   }
 }
 ```

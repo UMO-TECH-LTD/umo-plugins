@@ -23,19 +23,49 @@ End-to-end MR workflow: parse intent from natural language, manage branches, org
 
 ## Phase 1: Parse Input and Clarify
 
+### Step 1a — Detect active bead
+
+Before parsing user input, check for a currently claimed bead:
+
+```bash
+bd claimed --json 2>/dev/null
+# fallback if 'claimed' subcommand is not available:
+bd list --status in-progress --json 2>/dev/null
+```
+
+If a claimed bead is found, extract its JIRA key from the `jira:` label (e.g. label `jira:CWN-1234` → key `CWN-1234`). Treat this as the **candidate JIRA key**.
+
+### Step 1b — Reconcile with user input
+
 Extract the following from the user's free-form input. If any are ambiguous or missing, ask the developer before proceeding.
 
 | Parameter | How to detect | Default |
 |-----------|---------------|---------|
-| **JIRA key** | Regex `[A-Z]+-\d+` in input (e.g. `CWN-1234`) or from claimed bead's `jira:` label | None (optional) |
+| **JIRA key** | Regex `[A-Z]+-\d+` in input (e.g. `CWN-1234`) | Candidate from active bead (step 1a) |
 | **Branch strategy** | Keywords: "current branch", "new branch", "rename branch" | Ask |
 | **Target branch** | Keywords: "target dev", "target main", "into develop" | `dev` (from `.umo/jira-tracker.json` `gitlab.targetBranch`) |
 | **Additional context** | Anything else the developer wrote | None |
 
+**JIRA key reconciliation rules:**
+
+- User provided a key **and** it matches the active bead → use it, no confirmation needed.
+- User provided a key **different** from the active bead's key → show both and ask:
+  ```
+  Active bead: [CWN-1234] {bead title}
+  You mentioned: CWN-9999
+  Which JIRA ticket should this MR be linked to? (CWN-1234 / CWN-9999 / neither)
+  ```
+- No key in user input, active bead found → confirm silently:
+  ```
+  Linking this MR to active bead: [CWN-1234] {bead title}. Correct? (yes/no)
+  ```
+  If no: ask for a JIRA key or proceed without one.
+- No key in user input, no active bead → JIRA key remains optional (proceed without it).
+
 If the input is empty or unclear, ask:
 
 1. Do you want to use the current branch, create a new one, or rename the current branch?
-2. Is there a JIRA ticket for this work? (optional)
+2. Is there a JIRA ticket for this work? (default: from active bead if found)
 3. What is the target branch? (default: from config or `dev`)
 
 ## Phase 2: Branch Setup
@@ -341,6 +371,8 @@ Present matches, ask the developer to confirm, and persist the numeric ID to `.u
 
 ### With GitLab MCP
 
+Read `user.gitlabUserId` from `.umo/jira-tracker.json`. Include `assignee_ids` if set:
+
 ```
 CallMcpTool -> gitlab / create_merge_request
   id: "{gitlab-project-id}"
@@ -348,6 +380,7 @@ CallMcpTool -> gitlab / create_merge_request
   source_branch: "{source-branch}"
   target_branch: "{target-branch}"
   description: "{MR description}"
+  assignee_ids: ["{user.gitlabUserId}"]   // omit if null in config
 ```
 
 Report the MR URL to the developer on success.
@@ -358,15 +391,20 @@ Run from the **repository root** (where `origin` points at the GitLab project). 
 
 **Non-interactive create** (after push):
 
+Read `user.gitlabUserId` from `.umo/jira-tracker.json`. If set, add `--assignee`:
+
 ```bash
 glab mr create \
   --target-branch "{target-branch}" \
   --source-branch "{source-branch}" \
   --title "{MR title}" \
   --description "{MR description markdown}" \
+  --assignee "{user.gitlabUsername}" \
   --yes \
   --no-editor
 ```
+
+Omit `--assignee` if `user.gitlabUsername` is null in config.
 
 On success, print the MR URL (`glab mr view` or the command output).
 
@@ -378,42 +416,26 @@ Output the MR title and description as a copyable markdown block so the develope
 
 Only execute if a JIRA key was provided AND the Atlassian MCP is available.
 
-1. Draft a comment for the JIRA ticket:
+> **Do not transition the JIRA ticket status.** Creating an MR does not mean work is finished — the developer may open several MRs for a single ticket. Status transitions are handled exclusively by `/umo-jira-tracker:close`.
 
-```markdown
-MR created: {MR_URL}
+Delegate to the `jira-sync-back` skill `/mr` complete flow, which performs:
 
-### Changes
-{bullet list of commits}
-```
+1. **Operation A — Comment**: post an MR-created comment to the JIRA ticket.
 
-2. Look up available transitions:
+   Draft:
+   ```markdown
+   MR created: {MR_URL}
 
-```
-CallMcpTool -> Atlassian / getTransitionsForJiraIssue
-  cloudId: "{cloudId}"
-  issueIdOrKey: "{JIRA-KEY}"
-```
+   ### Changes
+   - {commit message 1}
+   - {commit message 2}
+   ```
 
-3. **Show the developer what will be posted and which status transition is proposed** (use `jira.transitionOnMr` from config, default `"In Review"`). Never update JIRA without explicit approval.
+2. **Operation C — Description update**: append (or extend) the MR delivery section in the JIRA ticket description with the MR URL, branch, one-line summary, and commit list.
 
-4. On approval:
+Both previews are shown together before any action. Developer can approve both, approve individually, or skip either.
 
-```
-CallMcpTool -> Atlassian / addCommentToJiraIssue
-  cloudId: "{cloudId}"
-  issueIdOrKey: "{JIRA-KEY}"
-  commentBody: "{comment}"
-```
-
-```
-CallMcpTool -> Atlassian / transitionJiraIssue
-  cloudId: "{cloudId}"
-  issueIdOrKey: "{JIRA-KEY}"
-  transition: { "id": "{transition-id}" }
-```
-
-If the developer declines the JIRA update, skip it.
+If the developer declines the JIRA update entirely, skip it.
 
 ---
 

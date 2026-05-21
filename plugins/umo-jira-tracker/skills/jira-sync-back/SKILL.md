@@ -94,7 +94,7 @@ CallMcpTool -> Atlassian / transitionJiraIssue
 
 ## Operation C — Edit JIRA description
 
-Used by: `/work` (push implementation notes), `/create` (append unlinked justification).
+Used by: `/work` (push implementation notes), `/create` (append unlinked justification), `/mr` (append MR delivery section).
 
 ### Preview
 
@@ -132,6 +132,27 @@ CallMcpTool -> Atlassian / editJiraIssue
   }
 ```
 
+### MR delivery section format (used by `/mr`)
+
+When called from `/mr`, the section appended to the JIRA description is:
+
+```markdown
+## MR Delivery
+
+| MR | Branch | Summary |
+|----|--------|---------|
+| [{MR_TITLE}]({MR_URL}) | `{source-branch}` | {one-line summary of what was shipped} |
+
+**Changes included:**
+- {commit message 1}
+- {commit message 2}
+- …
+
+> Added {date} by {gitlabUsername from config}
+```
+
+If a delivery section already exists (scan the existing description for `## MR Delivery`), append a new table row to the existing table rather than creating a second `## MR Delivery` heading. This supports the multiple-MR-per-ticket workflow.
+
 ---
 
 ## Operation D — Create JIRA issue
@@ -160,6 +181,7 @@ About to create {type} in project {PROJECT}:
   Type:     {issuetype}
   Parent:   {PARENT-KEY}: {parent summary}  (or "NONE — unlinked")
   Priority: {priority}
+  Assignee: {user.jiraAccountId display name}  (from config)
 
   Description preview:
   {first 200 chars}
@@ -168,6 +190,8 @@ Create issue? (yes/no)
 ```
 
 ### Execute (on yes)
+
+Read `user.jiraAccountId` from `.umo/jira-tracker.json`. If present, include the `assignee` field:
 
 ```
 CallMcpTool -> Atlassian / createJiraIssue
@@ -178,6 +202,7 @@ CallMcpTool -> Atlassian / createJiraIssue
     "issuetype": { "name": "{issuetype}" },
     "parent": { "key": "{PARENT-KEY}" },    // omit if no parent and orphan approved
     "priority": { "name": "{priority}" },
+    "assignee": { "accountId": "{user.jiraAccountId}" },  // omit if not set in config
     "description": "{description}"
   }
 ```
@@ -198,10 +223,12 @@ After successful creation, immediately upsert the new issue into beads using the
 
 ### `/mr` complete flow
 
-1. Operation A: comment `MR created: {MR_URL}\n\n### Changes\n{bullet-list}` — ask approval.
-2. Operation B: transition to `jira.transitionOnMr` — ask approval.
+> **Important: never trigger a JIRA status transition on MR creation.** A developer may open multiple MRs for a single ticket (partial delivery, follow-up fixes, etc.). Transitioning the ticket status is the sole responsibility of `/close`.
 
-Both previews shown together before any action. Developer can approve all, approve individually, or skip either.
+1. Operation A: comment `MR created: {MR_URL}\n\n### Changes\n{bullet-list}` — ask approval.
+2. Operation C: append (or extend) the MR delivery section in the JIRA description — ask approval.
+
+Both previews shown together before any action. Developer can approve both, approve individually, or skip either.
 
 ### `/close` complete flow
 
