@@ -78,7 +78,16 @@ No API key is stored in this plugin. Authentication is handled by the MCP host.
 
 ## Per-repo configuration
 
-Run `/umo-jira-tracker:setup` to generate `.umo/jira-tracker.json`. The file is safe to commit (no secrets). Example:
+Run `/umo-jira-tracker:setup` to generate `.umo/jira-tracker.json`. The file is safe to commit (no secrets).
+
+During setup you choose the `/sync` scope:
+
+| Scope | JQL |
+|-------|-----|
+| All open assigned tickets (default) | `assignee = currentUser() AND statusCategory != Done` |
+| Active sprint only | `assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done` |
+
+Example config (all open):
 
 ```json
 {

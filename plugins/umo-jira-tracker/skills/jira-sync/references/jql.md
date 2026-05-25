@@ -1,20 +1,25 @@
 # JQL Reference for jira-sync
 
-## Default sync query
+## Setup presets
 
-```
-assignee = currentUser() AND statusCategory != Done
-```
+`/umo-jira-tracker:setup` offers two presets — stored as `jira.syncJql` in `.umo/jira-tracker.json`:
 
-This returns all tickets assigned to the current user that are not yet done — regardless of sprint or project. It is the widest useful scope for a developer's personal Beads database.
+| Preset | JQL |
+|--------|-----|
+| All open assigned tickets (default) | `assignee = currentUser() AND statusCategory != Done` |
+| Active sprint only | `assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done` |
+
+The all-open preset returns every unresolved ticket assigned to you — including backlog and parent epics/stories. The active-sprint preset narrows to issues in the current open sprint(s), which is usually a better fit when you only work from the sprint board.
 
 ## Config override
 
-The user can set `jira.syncJql` in `.umo/jira-tracker.json` to narrow or widen scope. The `/sync` command's `--jql` flag overrides for a single run without touching the config.
+The user can set `jira.syncJql` in `.umo/jira-tracker.json` to any JQL. Re-run `/umo-jira-tracker:setup` to switch presets, or edit the file directly. The `/sync` command's `--jql` flag overrides for a single run without touching the config.
 
 ## Common customizations
 
 ### Active sprint only
+
+Same as the setup preset:
 
 ```
 assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done

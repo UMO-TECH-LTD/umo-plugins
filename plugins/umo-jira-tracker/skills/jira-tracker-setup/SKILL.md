@@ -1,6 +1,6 @@
 ---
 name: jira-tracker-setup
-description: First-run setup wizard for umo-jira-tracker. Verifies bd, glab, Atlassian MCP, and optional GitLab MCP; writes or updates .umo/jira-tracker.json. Use when setting up the plugin in a new repo or reconfiguring an existing installation.
+description: First-run setup wizard for umo-jira-tracker. Verifies bd, glab, Atlassian MCP, and optional GitLab MCP; collects sync scope (all open vs active sprint); writes or updates .umo/jira-tracker.json. Use when setting up the plugin in a new repo or reconfiguring an existing installation.
 paths:
   - ".umo/jira-tracker.json"
   - ".umo/"
@@ -59,12 +59,40 @@ Re-run /umo-jira-tracker:setup after authentication.
 
 ## Step 2 — Collect config
 
+### Sync scope presets
+
+`/sync` reads `jira.syncJql` from config. Offer two presets during setup — do not ask the developer to type raw JQL unless they explicitly want a custom query:
+
+| Preset | Label | `syncJql` value |
+|--------|-------|-----------------|
+| `all-open` | All open assigned tickets | `assignee = currentUser() AND statusCategory != Done` |
+| `active-sprint` | Active sprint only | `assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done` |
+
+Helper — map an existing `syncJql` back to a label for display:
+
+- exact match on either preset → show the preset label
+- anything else → show `Custom` and print the stored JQL verbatim
+
+When Atlassian MCP is connected, optionally dry-run both presets before the developer chooses:
+
+```
+CallMcpTool -> Atlassian / searchJiraIssuesUsingJql
+  cloudId: "{cloudId}"
+  jql: "{preset JQL}"
+  maxResults: 0
+```
+
+Show the `total` from each preset so the developer can compare (e.g. 42 all-open vs 4 active-sprint). Skip the dry-run if MCP is unavailable — fall back to the choice prompt only.
+
+### Existing config
+
 If `.umo/jira-tracker.json` already exists, read it and present a diff-style summary of current values before asking about changes:
 
 ```
 Current config (.umo/jira-tracker.json):
   jira.cloudUrl          = https://umotech.atlassian.net
   jira.defaultProjectKey = CWN
+  jira.syncScope         = All open assigned tickets
   jira.syncJql           = assignee = currentUser() AND statusCategory != Done
   jira.transitionOnMr    = In Review
   jira.transitionOnClose = Done
@@ -80,19 +108,43 @@ Update any values? (yes/no — defaults to no)
 
 When re-running setup with `--force` or when the user explicitly asks to refresh identity, re-run Step 5 to fetch fresh JIRA and GitLab user data.
 
-If creating fresh, ask each question with a sensible default shown:
+When the developer chooses to update an existing config, re-prompt for sync scope (with optional MCP dry-run counts) along with the other fields below.
+
+### Fresh config questions
+
+Ask each question with a sensible default shown (fresh install or update):
 
 | Question | Default |
 |----------|---------|
 | JIRA cloud URL | `https://umotech.atlassian.net` |
 | Default JIRA project key | (detect from Atlassian MCP accessible resources) |
-| Sync JQL (scope of /sync) | `assignee = currentUser() AND statusCategory != Done` |
+| Sync scope (`/sync`) | Present the two presets above; default `all-open` |
 | JIRA transition name when MR created | `In Review` |
 | JIRA transition name when bead closed | `Done` |
 | Git remote name | `origin` |
 | GitLab project ID (leave blank to auto-resolve on first /mr) | (blank) |
 | Default target branch for MRs | `dev` |
 | Preferred MR tool (`glab` or `mcp`) | `glab` |
+
+**Sync scope prompt** — present as a numbered choice, not a free-text JQL field:
+
+```
+What should /sync pull from JIRA?
+
+  1) All open assigned tickets (default)
+     assignee = currentUser() AND statusCategory != Done
+     → {totalAllOpen} issues  (omit counts if dry-run skipped)
+
+  2) Active sprint only
+     assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done
+     → {totalActiveSprint} issues
+
+  3) Custom JQL (advanced — only if the developer asks)
+
+Choice [1]:
+```
+
+Write the selected preset's JQL into `jira.syncJql`. For option 3, accept custom JQL and store it verbatim.
 
 Detect the project key from Atlassian MCP accessible resources if possible:
 
@@ -196,12 +248,17 @@ Setup complete!
     JIRA:   {jiraDisplayName} ({jiraAccountId})
     GitLab: @{gitlabUsername} (id: {gitlabUserId})
 
+Sync scope: {syncScopeLabel}
+  JQL: {syncJql}
+
 Next steps:
   /umo-jira-tracker:sync       Pull your unresolved JIRA tickets into Beads
   /umo-jira-tracker:work       Start working on a ticket
 ```
 
 ## Config schema reference
+
+`jira.syncJql` holds the effective query — setup writes one of the presets above (or custom JQL). There is no separate `syncScope` field; derive the label from the stored JQL when displaying config.
 
 ```json
 {
