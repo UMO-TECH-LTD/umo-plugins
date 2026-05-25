@@ -8,7 +8,7 @@ description: First-run setup wizard — verify tools (bd, glab, Atlassian MCP), 
 
 Configure the `umo-jira-tracker` plugin for the current repository.
 
-Reads the `jira-tracker-setup` skill and follows it to completion.
+Reads the `jira-tracker-setup` skill and follows it to completion. During config collection the wizard asks whether `/sync` should pull **all open assigned tickets** or **active sprint only** (with optional issue-count preview via Atlassian MCP).
 
 ## When to run
 
