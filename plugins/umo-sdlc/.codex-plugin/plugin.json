@@ -1,7 +1,7 @@
 {
   "name": "umo-sdlc",
   "version": "0.5.0",
-  "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, Beads planning, SDLC how-to guidance, and repo health diagnostics.",
+  "description": "UMO SDLC — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, Beads planning, SDLC how-to guidance, and repo health diagnostics.",
   "author": {
     "name": "UMO Platform Team"
   },
