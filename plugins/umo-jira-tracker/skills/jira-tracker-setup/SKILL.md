@@ -119,12 +119,42 @@ Ask each question with a sensible default shown (fresh install or update):
 | JIRA cloud URL | `https://umotech.atlassian.net` |
 | Default JIRA project key | (detect from Atlassian MCP accessible resources) |
 | Sync scope (`/sync`) | Present the two presets above; default `all-open` |
+| Sync direction | `both` (pull + push). Alternatives: `pull` only, `push` only |
+| Push Sub-tasks by default? | `no` — Sub-task beads are skipped unless opted-in per bead. Alternative: `yes` to push everything |
 | JIRA transition name when MR created | `In Review` |
 | JIRA transition name when bead closed | `Done` |
 | Git remote name | `origin` |
 | GitLab project ID (leave blank to auto-resolve on first /mr) | (blank) |
 | Default target branch for MRs | `dev` |
 | Preferred MR tool (`glab` or `mcp`) | `glab` |
+
+**Sync direction prompt:**
+
+```
+What should /sync do?
+
+  1) Both (default) — pull JIRA into Beads, then push unsynced beads back to JIRA
+  2) Pull only      — keep Beads aligned with JIRA; never create JIRA issues from beads
+  3) Push only      — only promote local beads; useful when JIRA is read-only for you
+
+Choice [1]:
+```
+
+Store the choice as `sync.direction` (`both` / `pull` / `push`).
+
+**Sub-task policy prompt:**
+
+```
+Push sub-tasks by default?
+
+  Sub-tasks are usually small implementation items that the team prefers to keep
+  in Beads. The default answer is NO. A bead can still be force-pushed by adding
+  the `jira-push` label to it.
+
+  yes / no [no]:
+```
+
+Store the answer as `sync.pushSubtasks` (`true` / `false`).
 
 **Sync scope prompt** — present as a numbered choice, not a free-text JQL field:
 
@@ -281,6 +311,13 @@ Next steps:
     "epicTypes": ["Epic", "Story"],
     "taskTypes": ["Task", "Bug", "Sub-task"]
   },
+  "sync": {
+    "direction": "both",
+    "pushSubtasks": false,
+    "pushLabel": "jira-push",
+    "skipLabel": "jira-skip",
+    "recentlyDoneWindow": "-14d"
+  },
   "user": {
     "jiraAccountId": null,
     "jiraDisplayName": null,
@@ -289,3 +326,13 @@ Next steps:
   }
 }
 ```
+
+### `sync` block reference
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `sync.direction` | `both` | `both` / `pull` / `push`. Controls which phases of `/sync` run by default |
+| `sync.pushSubtasks` | `false` | When `false`, sub-task candidates are skipped during push unless they carry `{sync.pushLabel}` |
+| `sync.pushLabel` | `jira-push` | Bead label that forces inclusion in push (overrides Sub-task skip and per-run dry-run cherry-pick defaults) |
+| `sync.skipLabel` | `jira-skip` | Bead label that forces exclusion from push regardless of any other rule |
+| `sync.recentlyDoneWindow` | `-14d` | JQL relative time window for the recently-Done pull extension (Phase A drift detection) |

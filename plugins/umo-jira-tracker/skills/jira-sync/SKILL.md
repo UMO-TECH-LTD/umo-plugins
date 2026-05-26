@@ -1,14 +1,16 @@
 ---
 name: jira-sync
-description: Sync JIRA issues (assignee=currentUser, unresolved by default) into the local Beads database using the Story-as-epic mapping. Idempotent upsert — preserves human Notes blocks, reconciles parents in a second pass, closes Done issues. Use when running /umo-jira-tracker:sync.
+description: Pull direction of the bidirectional sync. Pulls JIRA issues (assignee=currentUser, unresolved by default, plus a recently-Done window) into the local Beads database using the Story-as-epic mapping. Idempotent upsert — preserves human Notes blocks, reconciles parents in a second pass, closes Done issues. Used by `/umo-jira-tracker:sync` Phase A. Pair with `jira-push` for the reverse direction.
 paths:
   - ".umo/jira-tracker.json"
   - "**/.beads/**"
 ---
 
-# JIRA Sync
+# JIRA Sync (Pull)
 
 Pulls JIRA issues into the local Beads database using an idempotent upsert. Safe to run repeatedly — existing beads are updated, not duplicated.
+
+This skill is **Phase A** of `/umo-jira-tracker:sync`. Phase B (`jira-push`) runs immediately after when `sync.direction` allows it. Phase C (drift close) reconciles status differences. See `jira-push/SKILL.md` for the combined flow diagram.
 
 Load `references/mapping.md` for the full issue-type → bead-type matrix and description structure.
 Load `references/jql.md` for JQL customization and Atlassian MCP call details.
@@ -33,9 +35,32 @@ CallMcpTool -> Atlassian / getAccessibleAtlassianResources
 Pick the resource whose `url` matches `jira.cloudUrl` (or the first if only one exists). Store `cloudId` for subsequent calls.
 
 3. Determine effective JQL:
-   - `--jql` flag → use verbatim.
-   - else → `jira.syncJql` from config.
-   - fallback → `assignee = currentUser() AND statusCategory != Done`.
+   - `--jql` flag → use verbatim. Skip the recently-Done extension (the developer is in control).
+   - else → start from `jira.syncJql` and extend it with the recently-Done window (see below).
+   - fallback (no `jira.syncJql`) → `assignee = currentUser() AND statusCategory != Done`, then extend with the recently-Done window.
+
+**Recently-Done window.** The point of including done issues is to detect status drift (JIRA closed something while we were offline) without bloating the result set. Build the effective JQL as:
+
+```
+({configured-jql}) OR (assignee = currentUser() AND statusCategory = Done AND updated >= {sync.recentlyDoneWindow})
+```
+
+`sync.recentlyDoneWindow` defaults to `-14d`. Omit the extension if the developer passed `--jql` (assume they meant exactly what they typed) or if the configured JQL already references `statusCategory = Done`.
+
+4. **Pass 0 — Inventory existing beads.** Before fetching anything from JIRA, take a snapshot of what is already linked locally. This snapshot is reused by Phase B (`jira-push`) to detect orphan beads without re-scanning the database:
+
+```bash
+bd list --label-pattern "jira:*" --json --all
+```
+
+Build two maps from the result:
+
+```
+beadsByJiraKey  = { "CWN-1234": { beadId, status, labels } }
+beadsByBeadId   = { "bd-42":    { jiraKey, status, labels } }
+```
+
+Cache both for the duration of the `/sync` session.
 
 ### Phase 1 — Fetch issues
 
@@ -43,9 +68,11 @@ Pick the resource whose `url` matches `jira.cloudUrl` (or the first if only one 
 CallMcpTool -> Atlassian / searchJiraIssuesUsingJql
   cloudId: "{cloudId}"
   jql: "{effectiveJql}"
-  fields: ["summary","status","priority","issuetype","parent","assignee","sprint","description","customfield_10014"]
+  fields: ["summary","status","priority","issuetype","parent","assignee","sprint","description","resolution","updated","customfield_10014"]
   maxResults: 100
 ```
+
+`resolution` and `updated` are needed for the recently-Done window so Pass 3 can decide whether a bead should be closed (and so the dry-run can label rows correctly).
 
 Paginate if `total > 100`. Collect the full list before proceeding.
 
@@ -147,10 +174,10 @@ If not found: print `WARN: parent bead for {PARENT-KEY} not found — skipping p
 
 ### Phase 5 — Report
 
-Print a final summary table:
+Print a final pull-summary table:
 
 ```
-Sync complete:
+Pull complete (Phase A):
 
 | Action  | Count |
 |---------|-------|
@@ -158,10 +185,16 @@ Sync complete:
 | updated |     3 |
 | closed  |     1 |
 | skipped |    12 |
+```
 
+If `sync.direction` is `pull`, finalize:
+
+```
 Bead database is now up to date.
 Run `bd ready --json` to see what's next.
 ```
+
+Otherwise, hand control to **`jira-push`** (Phase B) using the inventory built in Pass 0.
 
 ## Error handling
 

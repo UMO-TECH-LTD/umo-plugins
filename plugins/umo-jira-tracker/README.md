@@ -1,13 +1,13 @@
 # umo-jira-tracker
 
-Automates the daily developer JIRA workflow by linking JIRA tickets to a local [Beads](https://beads.umo.dev) (`bd`) database, guiding bead-by-bead implementation, creating GitLab MRs with STD-JIRA naming, and syncing results back to JIRA.
+Automates the daily developer JIRA workflow by linking JIRA tickets to a local [Beads](https://beads.umo.dev) (`bd`) database, guiding bead-by-bead implementation, creating GitLab MRs with STD-JIRA naming, and **bidirectionally** syncing between Beads (the local source of truth) and JIRA.
 
 ## Slash commands
 
 | Command | Purpose |
 |---------|---------|
 | `/umo-jira-tracker:setup` | First-run wizard: verify tools, write `.umo/jira-tracker.json` |
-| `/umo-jira-tracker:sync [--dry-run] [--jql "..."]` | Pull unresolved JIRA tickets → Beads (idempotent upsert) |
+| `/umo-jira-tracker:sync [--dry-run] [--jql "..."] [--pull-only\|--push-only]` | Two-way sync: pull JIRA→Beads, then push locally-created beads → JIRA, then reconcile status drift |
 | `/umo-jira-tracker:work [KEY\|bead-id\|--ready]` | Claim a bead, discuss AC with AI, push refinements back to JIRA |
 | `/umo-jira-tracker:create [type] [--parent KEY]` | Create a new JIRA issue with mandatory parent linkage |
 | `/umo-jira-tracker:commit` | Group staged changes into conventional commits, generate MR description |
@@ -19,7 +19,8 @@ Automates the daily developer JIRA workflow by linking JIRA tickets to a local [
 | Skill | Purpose |
 |-------|---------|
 | `jira-tracker-setup` | Tool verification + config writer |
-| `jira-sync` | JIRA → Beads mapping + idempotent upsert |
+| `jira-sync` | JIRA → Beads pull (Phase A of `/sync`) |
+| `jira-push` | Beads → JIRA reverse-sync (Phase B of `/sync`) |
 | `jira-bead-bridge` | Claim, discuss, refine, push AC back to JIRA |
 | `gitlab-mr` | glab / GitLab MCP MR creation reference |
 | `jira-sync-back` | All JIRA mutations: comments, transitions, issue creation |
@@ -113,7 +114,7 @@ Example config (all open):
 }
 ```
 
-## JIRA → Beads mapping
+## JIRA → Beads mapping (pull direction)
 
 | JIRA type | Bead type | Parent bead |
 |-----------|-----------|-------------|
@@ -123,7 +124,50 @@ Example config (all open):
 | Sub-task | task | parent Story-epic-bead |
 
 Bead title format: `[CWN-1234] <JIRA summary>`
-Bead labels: `jira:CWN-1234`, `jira-type:story`, `jira-status:in-progress`, etc.
+Bead labels: `jira:CWN-1234`, `jira-type:story`, `jira-status:in-progress`, `jira-origin:bead` (only set for beads that were promoted via push).
+
+Pull also includes a **recently-Done window** (`sync.recentlyDoneWindow`, default `-14d`) so JIRA tickets closed while you were offline still trigger a local bead close.
+
+## Beads → JIRA mapping (push direction)
+
+Source of truth: **Beads.** Any open bead with no `jira:` label is a push candidate when `/sync` runs (unless `sync.direction` is set to `pull`).
+
+| Bead `type` | Parent context | Proposed JIRA type | Default action |
+|-------------|----------------|---------------------|----------------|
+| `epic` | no parent | Epic | requires `create epic` phrase |
+| `epic` | parent is JIRA Epic | Story | create |
+| `task` / `chore` / `feature` | no parent | Task | orphan warning (`create unlinked` required) |
+| `task` / `chore` / `feature` | parent is JIRA Epic | Task | create |
+| `task` / `chore` / `feature` | parent is JIRA Story / Task / Bug | Sub-task | **skipped** unless bead has `jira-push` label or `sync.pushSubtasks=true` |
+| `bug` | parent is JIRA Epic / Story | Bug | create |
+| `decision` | any | — | always skipped (ADRs stay local) |
+
+Full classification matrix and parent-walking algorithm: `skills/jira-push/references/bead-type-mapping.md`.
+
+### Opt-in / opt-out labels
+
+| Label | Effect |
+|-------|--------|
+| `jira-push` | Force-include this bead in push (overrides Sub-task skip). Configurable via `sync.pushLabel` |
+| `jira-skip` | Force-exclude this bead from push entirely. Configurable via `sync.skipLabel` |
+
+### Status drift (Phase C)
+
+After pull and push complete, `/sync` reconciles any bead that is **closed locally** but whose linked JIRA ticket is still open: it offers to transition JIRA to `jira.transitionOnClose` via the existing `jira-sync-back` Operation B preview. This catches retroactive `bd close` calls so JIRA does not silently lag behind.
+
+## Local bead workflow
+
+```bash
+bd create "Investigate failing CI" --type task
+bd dep add bd-XX bd-YY        # mark parent (optional)
+/umo-jira-tracker:sync         # push detects the orphan and proposes a JIRA Task
+
+bd create "Phase-2 platform work" --type epic
+bd create "Backend wiring" --type task --parent bd-100
+/umo-jira-tracker:sync         # both beads pushed in topological order
+```
+
+Use `bd label add <id> jira-skip` to keep a bead out of JIRA permanently, or `bd label add <id> jira-push` to force-sync a sub-task.
 
 ## Naming standard
 
