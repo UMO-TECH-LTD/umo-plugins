@@ -1,5 +1,5 @@
 ---
-description: Route Spec-Driven Development — turn unclear intent into durable docs, Beads planning, test-first implementation, and evidence closeout.
+description: Route Spec-Driven Development — turn unclear intent into durable docs, Beads task decomposition, test-first implementation, and evidence closeout.
 argument-hint: "[task or topic]"
 ---
 
@@ -18,14 +18,14 @@ Run the UMO SDD workflow. SDD is the umbrella discipline that connects intent �
    - `adr/NNN-<slug>.md` for durable accepted decisions
    - `incidents/YYYY-MM-DD-<slug>.md` for postmortems and follow-ups
    - `guides/` or `reference/` for steps or source-tied facts
-3. **Planning.** Use the `planning` skill (or `/umo-sdlc:planning`) to turn accepted specs, proposals, ADRs, incidents, or review findings into Beads epics, tasks, spikes, `decision` beads, dependencies, labels, and closeout expectations.
+3. **Task Decomposition.** Use the `task` skill (or `/umo-sdlc:task`) to turn accepted specs, proposals, ADRs, incidents, or review findings into rich, traceable Beads epics and tasks with spec references and independent unit contracts.
 4. **Test-Driven Development.** When implementation is ready and testable, write a focused failing test or explicit test case before the smallest useful implementation change. Use repo-local language/test rules for stack-specific guidance.
 5. **Evidence closeout.** Close Beads with evidence, run repo quality gates, and update docs when behavior, service facts, config, dependencies, or operations changed.
 
 ## Routing rules
 
 - Need a spec / proposal / ADR / incident / reference? → invoke the `docs` skill.
-- Need a Beads tree or execution handoff? → invoke the `planning` skill.
+- Need a Beads tree or execution handoff? → invoke the `task` skill.
 - Need repo navigation, adoption, or health diagnostics? → invoke the `how-to` skill.
 - Need stack-specific tests or quality commands? → use repo-local steering (`AGENTS.md`) and language plugin guidance.
 

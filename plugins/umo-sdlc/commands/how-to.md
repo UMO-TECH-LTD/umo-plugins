@@ -1,5 +1,5 @@
 ---
-description: UMO SDLC how-to entry point — repo navigation, SDD/TDD orientation, plugin adoption, and repository health diagnostics. Use when the user asks how to use umo-sdlc, where to find repo facts, how to plan or execute work, how to apply SDD/TDD, or how to diagnose and repair repo steering.
+description: UMO SDLC how-to entry point — repo navigation, SDD/TDD orientation, plugin adoption, and repository health diagnostics. Use when the user asks how to use umo-sdlc, where to find repo facts, how to apply SDD/TDD, or how to diagnose and repair repo steering.
 argument-hint: "[question or repo path]"
 ---
 
@@ -18,16 +18,16 @@ Use this when a user asks:
 - "How should agents work in this repo?"
 - "Help me follow SDLC, SDD, or TDD for this work."
 - "Set up / adapt this repo for umo-sdlc."
-- "Diagnose / heal / check our docs, planning, Beads, or agent steering."
+- "Diagnose / heal / check our docs, Beads, or agent steering."
 - "Why is the agent not following the SDLC plugin?"
 
 ## Route the work
 
 1. Explain and orient with this command when the question is broad, procedural, or about where to find information.
 2. Use `/umo-sdlc:docs` for docs bucket setup, audit, lifecycle, passports, catalog sidecars, proposals, ADRs, guides, references, incidents, specs, and backlogs.
-3. Use `/umo-sdlc:planning` for Beads epics / tasks / spikes, dependencies, labels, comments, readiness, execution handoff, and closeout.
+3. Use `/umo-sdlc:task` for rich, spec-traceable Beads decomposition with independent unit contracts and wave grouping.
 4. Use repo-local instructions (`AGENTS.md`, `CLAUDE.md`) for commands, service names, paths, deployment topology, git policy, and exceptions.
-5. Use `/umo-sdlc:sdd` when the user asks for Spec-Driven Development or needs a disciplined path from unclear intent to docs, planning, test-first implementation, and evidence closeout.
+5. Use `/umo-sdlc:sdd` when the user asks for Spec-Driven Development or needs a disciplined path from unclear intent to docs, task decomposition, test-first implementation, and evidence closeout.
 
 ## Multi-service monorepo navigation
 

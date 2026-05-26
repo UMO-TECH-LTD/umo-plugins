@@ -13,15 +13,16 @@ steer agents to `umo-sdlc`, not fork its docs, planning, or how-to lifecycle.
 
 Root `AGENTS.md` should:
 
-- state that the repo uses `umo-sdlc` for docs lifecycle, planning lifecycle,
-  Beads planning, SDLC, Spec-Driven Development (SDD), Test-Driven Development
+- state that the repo uses `umo-sdlc` for docs lifecycle, task decomposition
+  into Beads, SDLC, Spec-Driven Development (SDD), Test-Driven Development
   (TDD) how-to guidance, and repository health diagnostics;
 - point agents to `how-to` for setup, explanation, repo navigation, repo
   adaptation, and repair;
 - list repo-specific commands, service registry, paths, and exceptions;
-- keep Beads command reminders short and defer detailed planning behavior to
-  the plugin;
-- avoid copying the full planning lifecycle, label taxonomy, or bead templates.
+- keep Beads command reminders short and defer detailed task decomposition
+  behavior to the plugin;
+- avoid copying the full task decomposition playbook, label taxonomy, or bead
+  templates.
 
 ## Service AGENTS.md
 
@@ -29,7 +30,7 @@ Service `AGENTS.md` should:
 
 - identify the service, stack, commands, ownership, dependencies, and sharp
   edges;
-- point service-specific docs, planning, and how-to work to `umo-sdlc`;
+- point service-specific docs, task decomposition, and how-to work to `umo-sdlc`;
 - avoid redefining company-wide Beads labels, priorities, lifecycle phases, or
   closeout rules.
 

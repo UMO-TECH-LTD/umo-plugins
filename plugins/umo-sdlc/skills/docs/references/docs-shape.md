@@ -112,7 +112,7 @@ deciding is an event/date, not a lifecycle state.
 | reference | Contract/schema/API/env facts tied to source | active, archived | `reference/` |
 | incident | Postmortem and follow-ups | active, archived | `incidents/YYYY-MM-DD-slug.md` |
 | spec | In-flight acceptance criteria | active | `spec.md` |
-| backlog | Future/deferred work | active | `backlog.md` |
+| backlog | Future/deferred work (two valid locations) | active | `docs/product/backlog.md` (PO-owned) or `services/<svc>/docs/backlog.md` (engineer-owned) |
 | roadmap | Short priority ordering | active | `ROADMAP.md` |
 
 ## Promotion Rules
@@ -130,6 +130,10 @@ deciding is an event/date, not a lifecycle state.
   reference and move the decision/trade-off to proposal or ADR.
 - Backlog item is being worked? Promote to concrete `spec.md` AC and leave a
   trace in `backlog.md`.
+- Product documents (BRD/PRD) may optionally include Spec Status Lifecycle,
+  Requirements Traceability Matrix (RTM), Money/Data Flow, Audit Trail
+  Requirements, and Regulatory Mapping when the domain requires strong
+  governance (see `product` skill).
 
 ## Templates
 
