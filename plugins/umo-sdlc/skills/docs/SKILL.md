@@ -1,6 +1,6 @@
 ---
 name: docs
-description: Specializes UMO managed docs buckets, doc-meta, Markdown-first service passports, service.catalog.json sidecars, and typed proposal/ADR/guide/reference/incident shapes. Use when creating, auditing, repairing, or migrating docs/ or services/*/docs/ buckets; editing PASSPORT.md or service.catalog.json; or updating the umo-sdlc plugin. Do not use for generic docs lifecycle reminders outside UMO bucket conventions; use core docs-lifecycle for that.
+description: Manages UMO docs buckets, doc-meta, PASSPORT.md, service.catalog.json, and document type boundaries (proposal/ADR/guide/reference/incident). Use for bucket setup, audit, migration, or editing passports/catalogs. Do not duplicate generic docs lifecycle rules.
 paths:
   - "**/docs/**"
   - "services/*/PASSPORT.md"
@@ -18,9 +18,11 @@ lifecycle actions for UMO SDLC documentation.
 `umo-agentic-core` owns generic docs lifecycle. This skill owns UMO bucket
 structure, document shapes, service passports, doc-meta, and catalog sidecars.
 
-Load `references/docs-shape.md` when you need exact templates, required
-sections, status semantics, or validation details. Use files under `assets/`
-for machine-readable templates/schemas.
+**Important:** When using this skill, always load and follow:
+- `references/docs-shape.md` (detailed templates, type semantics, validation rules)
+- Files under `assets/` (JSON schemas and machine-readable templates)
+
+These references are part of the skill context and must be consulted for accurate work.
 
 ## First Steps
 
@@ -85,6 +87,11 @@ archive/reference/.gitkeep
 
 Library buckets omit `PASSPORT.md`, `spec.md`, `backlog.md`, and
 `reference/service.catalog.json` unless explicitly needed.
+
+Note on backlogs:
+- `docs/product/backlog.md` — PO-owned product-level deferred ideas.
+- `services/<svc>/docs/backlog.md` — Engineer-owned service/implementation backlog.
+Both are valid and can coexist.
 
 ## Audit
 

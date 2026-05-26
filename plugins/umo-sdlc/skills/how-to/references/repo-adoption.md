@@ -39,7 +39,7 @@ Root steering:
 
 - mentions `umo-sdlc`;
 - points docs lifecycle to `docs`;
-- points planning/Beads work to `planning`;
+- points Beads decomposition work to `task`;
 - points setup, explanation, repo navigation, adoption, and health diagnostics
   to `how-to`;
 - keeps repo commands and service registry local;
@@ -49,7 +49,7 @@ Service steering:
 
 - identifies service, stack, commands, ownership, dependencies, and sharp
   edges;
-- points docs/planning/how-to work back to `umo-sdlc`;
+- points docs / task / how-to work back to `umo-sdlc`;
 - does not redefine plugin-wide Beads labels, priorities, lifecycle phases, or
   closeout rules.
 
@@ -60,11 +60,11 @@ Docs readiness:
 - document types match locations;
 - service passports and service catalogs are consistent where present.
 
-Planning readiness:
+Task / Beads readiness:
 
-- Beads exists when repo claims Beads planning;
+- Beads is initialized when the repo claims Beads usage;
 - local Beads command policy is explicit;
-- accepted proposals and postmortems can become bead trees;
+- accepted proposals, PRDs, and postmortems can be turned into rich, traceable bead trees via the `task` skill;
 - labels and closeout rules do not conflict with UMO taxonomy.
 
 Service navigation readiness:
@@ -93,7 +93,11 @@ Scope: <root | service | plugin>
 - Pass:
 - Gaps:
 
-### Planning / Beads
+### Task / Beads
+- Pass:
+- Gaps:
+
+### Product Document Governance (when applicable)
 - Pass:
 - Gaps:
 

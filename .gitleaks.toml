@@ -18,10 +18,12 @@
 useDefault = true
 
 [allowlist]
-description = "Documentation-only plugin bundles (high-entropy noise from doc tokens)"
+description = "Documentation-only plugin bundles + Markdown files (high-entropy noise from doc tokens and example paths)"
 paths = [
   '''plugins/umo-effect/.*''',
   '''plugins/umo-jira-tracker/.*''',
+  '''(?i)\.md$''',
+  '''(?i)\.markdown$''',
 ]
 
 # ─────────────────────────────────────────────────────────────────────

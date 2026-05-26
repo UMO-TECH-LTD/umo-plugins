@@ -1,6 +1,6 @@
 {
   "name": "umo-sdlc",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, Beads planning, SDLC how-to guidance, and repo health diagnostics.",
   "author": {
     "name": "UMO Platform Team"
@@ -18,7 +18,7 @@
     "runbook",
     "audit",
     "spec-driven",
-    "planning",
+    "task",
     "beads",
     "bd",
     "how-to",
@@ -41,12 +41,11 @@
       "service-passports",
       "service-catalog-sidecars",
       "docs-document-shapes",
-      "planning-lifecycle",
-      "beads-planning-substrate",
+      "task-decomposition",
       "bead-tree-shapes",
-      "planning-readiness",
-      "planning-handoff",
-      "planning-closeout",
+      "beads-readiness",
+      "beads-handoff",
+      "beads-closeout",
       "sdlc-how-to",
       "generic-sdd-tdd-orientation",
       "repo-adoption-diagnostics"

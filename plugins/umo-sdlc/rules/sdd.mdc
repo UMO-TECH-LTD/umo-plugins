@@ -17,9 +17,9 @@ SDD is the umbrella workflow:
    - ADR for durable accepted decisions;
    - incident/postmortem for operational failure and follow-ups;
    - guide/reference for steps or source-tied facts.
-3. **Planning:** use the `planning` skill to turn accepted specs, proposals,
-   ADRs, incidents, or review findings into Beads epics, tasks, spikes,
-   `decision` beads, dependencies, labels, and closeout expectations.
+3. **Planning / Task Decomposition:** use the `task` skill to turn accepted specs, PRDs, BRDs, proposals, ADRs,
+   incidents, or review findings into rich, traceable Beads epics/tasks/spikes
+   with spec references, independent unit contracts, and wave grouping.
 4. **Test-Driven Development:** when implementation is ready and testable, use
    repo-local and language-specific rules to write a focused failing test or
    explicit test case before the smallest useful implementation change.
@@ -30,7 +30,8 @@ SDD is the umbrella workflow:
 ## Routing
 
 - Need a spec/proposal/ADR/incident/reference? Load `docs`.
-- Need a Beads tree or execution handoff? Load `planning`.
+- Need a Beads tree or execution handoff? Load `task`.
+- Need PO workflows, BRD/PRD authoring, or roadmap work? Load `product`.
 - Need repo navigation, adoption, or health diagnostics? Load `how-to`.
 - Need stack-specific tests or quality commands? Use repo-local and language
   plugin guidance.
