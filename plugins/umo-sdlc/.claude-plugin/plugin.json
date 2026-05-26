@@ -28,6 +28,5 @@
     "tdd",
     "repo-adoption"
   ],
-  "skills": "./skills",
-  "commands": "./commands"
+  "skills": "./skills"
 }

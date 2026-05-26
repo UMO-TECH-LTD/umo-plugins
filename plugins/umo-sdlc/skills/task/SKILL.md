@@ -1,6 +1,6 @@
 ---
 name: task
-description: Turns accepted UMO specs, PRDs, BRDs, proposals, ADRs, incidents, and review findings into rich, traceable Beads epics/tasks/spikes with explicit spec references, independent unit contracts, wave grouping, and verification. Use when creating or refining bead trees, or handing execution to agents. Replaces the old `planning` skill.
+description: Turns accepted UMO specs, PRDs, BRDs, proposals, ADRs, incidents, and review findings into rich, traceable Beads epics/tasks/spikes with explicit spec references, independent unit contracts, wave grouping, and verification. Use when creating or refining bead trees, or handing execution to agents.
 paths:
   - "**/AGENTS.md"
   - "**/docs/proposals/**"
