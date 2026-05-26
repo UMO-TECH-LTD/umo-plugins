@@ -38,18 +38,9 @@ Every document created or updated with this skill must contain:
 
 ## Spec Status Lifecycle (Mandatory Governance)
 
-Every managed product document carries a status in its doc-meta and a `## Status Lifecycle` section.
+Every managed product document **must** carry a clear status in its doc-meta header (e.g. `Status: draft | active | accepted | rejected | implemented`).
 
-| Status | Meaning | Who Can Transition | Next Possible |
-|--------|---------|--------------------|---------------|
-| draft | PO is still authoring; visible but not for implementation | PO | review |
-| review | PO requests cross-functional feedback (engineering, compliance, legal) | PO + reviewers | approved, draft |
-| approved | Ready for engineering research and `task` skill decomposition | PO + Eng Lead | in-development |
-| in-development | Engineers own implementation; PO does not change spec without new status | Eng | under-test |
-| under-test | Implementation returned to PO for intent verification | PO | released, in-development |
-| released | Done; spec becomes permanent record | PO | (archived on major change) |
-
-**Rule**: Only `approved` specs may be handed to the `task` skill. Status is the single source of truth for the handoff gate.
+A detailed `## Status Lifecycle` table is **optional** and should only be used for high-risk or heavily governed documents that require multiple explicit human approval gates. For most PRDs and BRDs, the header status is sufficient and preferred by agents during research.
 
 ## Requirements Traceability Matrix (Lightweight RTM)
 
@@ -113,7 +104,7 @@ This table is the contract between Product and Compliance/Legal.
 
 Before an engineer starts research and invokes the `task` skill, verify:
 
-- [ ] Spec status is `approved`.
+- [ ] Document has a clear `Status:` in the doc-meta header.
 - [ ] Every acceptance criterion is observable and testable.
 - [ ] Scope and non-goals are explicit.
 - [ ] Key sections have stable anchors.
