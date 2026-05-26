@@ -71,9 +71,8 @@ The plugin was deliberately designed around the manifesto's core values:
 
 ```
 plugins/umo-sdlc/
-├── rules/            # Cursor rules (sdd.mdc, etc.)
+├── rules/            # Cursor rules (sdd.mdc)
 ├── skills/           # product, task, docs, how-to (+ references & assets)
-├── commands/         # Claude Code slash commands
 ├── .cursor-plugin/   # Cursor manifest
 ├── .claude-plugin/   # Claude Code manifest
 └── .codex-plugin/    # Codex manifest
