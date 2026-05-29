@@ -54,6 +54,18 @@
       "license": "UNLICENSED",
       "category": "productivity",
       "keywords": ["umo", "jira", "beads", "bd", "gitlab", "glab", "sprint", "sync", "conventional-commits", "std-jira"]
+    },
+    {
+      "name": "umo-llm-wiki",
+      "source": "./plugins/umo-llm-wiki",
+      "description": "LLM Wiki — read-only Atlassian MCP and llm-wiki-ask skill for querying the UMO process library (decisions, concepts, services, teams, people, topics) from the LLM-MIRROR Confluence space. No writes, no comments, no JIRA mutations.",
+      "version": "0.1.0",
+      "author": {
+        "name": "UMO Platform Team"
+      },
+      "license": "UNLICENSED",
+      "category": "productivity",
+      "keywords": ["umo", "llm-wiki", "confluence", "wiki", "knowledge", "adr", "read-only"]
     }
   ]
 }
