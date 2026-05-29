@@ -1,0 +1,35 @@
+{
+  "name": "umo-llm-wiki",
+  "version": "0.1.0",
+  "description": "LLM Wiki — read-only Atlassian MCP and llm-wiki-ask skill for querying the UMO process library.",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": [
+    "umo",
+    "llm-wiki",
+    "confluence",
+    "wiki",
+    "knowledge",
+    "adr",
+    "read-only"
+  ],
+  "license": "UNLICENSED",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "UMO LLM Wiki",
+    "shortDescription": "Read-only Confluence query skill for the UMO process library (LLM-MIRROR).",
+    "longDescription": "Bundled Atlassian MCP config and llm-wiki-ask skill — query decisions, concepts, services, teams, people, and topics from the LLM-MIRROR Confluence space. Strictly read-only: no comments, no edits, no JIRA writes.",
+    "developerName": "UMO Platform Team",
+    "category": "Productivity",
+    "capabilities": ["Read"],
+    "defaultPrompt": [
+      "What does the ADR say about authentication?",
+      "Who owns the payments service?",
+      "What concepts exist around onboarding?"
+    ],
+    "brandColor": "#0052CC",
+    "composerIcon": "./assets/umo.png",
+    "logo": "./assets/umo.png"
+  }
+}

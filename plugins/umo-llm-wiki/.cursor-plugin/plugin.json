@@ -1,0 +1,19 @@
+{
+  "name": "umo-llm-wiki",
+  "version": "0.1.0",
+  "description": "LLM Wiki — read-only Atlassian MCP and llm-wiki-ask skill for querying the UMO process library (LLM-MIRROR) in Confluence.",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": [
+    "umo",
+    "llm-wiki",
+    "confluence",
+    "wiki",
+    "knowledge",
+    "adr",
+    "read-only"
+  ],
+  "license": "UNLICENSED",
+  "logo": "./assets/umo.png"
+}
