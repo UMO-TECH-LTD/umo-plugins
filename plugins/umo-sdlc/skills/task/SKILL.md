@@ -65,8 +65,10 @@ For each child task:
   - `## Verification` → concrete command or evidence (e.g. `bun test`, `tsc --noEmit`, "PRD section 4.2 satisfied").
 
 ### Step 4: Add Dependencies and Waves
-- Use `bd dep add` so that `bd ready` shows the intended first work.
-- Explicitly document waves in the epic (Wave 1 = independent tasks that can start immediately; Wave 2 = tasks that need output from Wave 1 or a human review gate).
+- **Epic membership (hierarchy):** Use `bd link <child-task-id> <epic-id> --type parent-child`. This is the correct way to attach tasks to an epic so that `bd children <epic>` and scoped `bd ready` work. **Never use `bd dep add` for epic membership.**
+- **Task-to-task blockers:** Use `bd dep add <downstream-task> <upstream-task>` (or `bd link --type blocks`) so that `bd ready` only shows unblocked work.
+- Explicitly document waves in the epic description (Wave 1 = independent tasks that can start immediately; Wave 2 = tasks that need output from Wave 1 or a human review gate).
+- **Reference:** This skill (`umo-sdlc/task`) is the single source of truth for Beads decomposition patterns. All other `.cursor/commands/*.md`, `AGENTS.md`, or local rules must defer to it and link here instead of duplicating CLI examples.
 
 ### Step 5: Labels and Human Decision Points
 - Apply standard labels (phase, source, service/domain, size, quality-gate).
