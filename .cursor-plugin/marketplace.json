@@ -8,6 +8,11 @@
   },
   "plugins": [
     {
+      "name": "umo-mr",
+      "source": "plugins/umo-mr",
+      "description": "UMO MR — org-default /mr command for creating GitLab merge requests: autodetects the default branch, always creates a new branch, conventional commits, preview, push, MR creation (glab preferred, GitLab MCP fallback), and optional JIRA sync."
+    },
+    {
       "name": "umo-sdlc",
       "source": "plugins/umo-sdlc",
       "description": "UMO SDLC v1 — Markdown-first docs buckets, typed document lifecycles, service passports, service.catalog.json sidecars, and one compact docs skill with references/assets for setup, audit, and lifecycle."

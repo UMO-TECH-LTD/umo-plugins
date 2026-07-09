@@ -8,6 +8,18 @@
   },
   "plugins": [
     {
+      "name": "umo-mr",
+      "source": "./plugins/umo-mr",
+      "description": "UMO MR — org-default /mr command for creating GitLab merge requests: autodetects the default branch, always creates a new branch, conventional commits, preview, push, MR creation (glab preferred, GitLab MCP fallback), and optional JIRA sync.",
+      "version": "0.1.0",
+      "author": {
+        "name": "UMO Platform Team"
+      },
+      "license": "UNLICENSED",
+      "category": "productivity",
+      "keywords": ["umo", "umo-mr", "mr", "merge-request", "gitlab", "glab", "conventional-commits", "trunk-based", "squash-merge", "jira"]
+    },
+    {
       "name": "umo-brain",
       "source": "./plugins/umo-brain",
       "description": "Brain harness — Brain MCP (david-brain) plus a SessionStart hook and brain-harness skill for shared memory across repos and sessions.",
