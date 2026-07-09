@@ -1,0 +1,37 @@
+---
+description: UMO MR — always-on reminder that /mr is the single entry point for creating GitLab merge requests. Triggers whenever the developer asks to create, open, or push an MR, or whenever the agent itself decides an MR should be created — regardless of repo config. Never call glab or GitLab MCP create_merge_request directly.
+alwaysApply: true
+---
+
+# UMO MR — Orientation
+
+`umo-mr` is a core/default UMO plugin. **Whenever the developer asks to create, open, or ship a merge request — or whenever you (the agent) determine that work is ready to become an MR — invoke the `/mr` command.** This applies in every git repo with a GitLab remote, whether or not `.umo/mr.json` exists — the config file only overrides defaults, it does not gate whether `/mr` is the right tool.
+
+## MR creation rule
+
+**Always use `/mr` to create Merge Requests.** Do not call `glab mr create` or a GitLab MCP `create_merge_request` tool directly, and do not hand-roll branch/commit/push steps for the purpose of opening an MR. The `/mr` command is the single entry point — it autodetects the repo's default branch, always creates a new branch for the MR (asking only when the branch strategy is genuinely ambiguous), handles commit planning with an approval gate, the MR preview, push, MR creation (glab → GitLab MCP fallback → manual), and optional JIRA sync as one approved flow.
+
+Invoking the `gitlab-mr` skill directly, outside of `/mr` Phase 6, bypasses the preview/approval gates and can produce MRs with the wrong title format or an unreviewed description.
+
+## Conventions summary (defaults, overridable via `.umo/mr.json`)
+
+- **Branch strategy:** always create a new branch for the MR — `{type}/{JIRA-KEY}-{short-description}` (or `{type}/{short-description}` without a ticket) — types: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`, `ci`, `perf`, `build`. Only reuse/rename the current branch if the developer explicitly asks, or ask when it's unclear which branch to use.
+- **Target branch:** autodetected from the repo's GitLab/git default branch (e.g. `main`), not hardcoded — overridable via `.umo/mr.json` → `gitlab.targetBranch`.
+- **MR title:** `{type}(scope): lowercase imperative subject (JIRA-KEY)` — Conventional Commits, JIRA key in parentheses **at the end**, commitlint-safe.
+- **Merge strategy:** squash by default (`--squash-before-merge` via glab, or the MCP equivalent).
+- **MR creation tool order:** `glab` CLI first (default), GitLab MCP as fallback when `glab` is missing/unauthenticated/fails, manual copy-paste as last resort.
+- **Never mutate JIRA without an explicit developer approval gate.** Always preview the comment body or transition before calling any Atlassian MCP write tool.
+
+## Available command
+
+| Command | Purpose |
+|---------|---------|
+| `/mr` | Parse intent, manage branches, plan commits, preview, push, create MR, optionally sync JIRA |
+
+## Config location (optional)
+
+`.umo/mr.json` — see this plugin's `README.md` for the full schema. Safe to commit (no secrets). If missing, `/mr` proceeds with UMO defaults.
+
+## Coexistence with `umo-jira-tracker`
+
+If `umo-jira-tracker` is also installed and `.umo/jira-tracker.json` is present, prefer `/umo-jira-tracker:mr` for JIRA-tracked (beads-linked) work — it adds bead reconciliation and JIRA sync-back on top of the same MR flow. Use plain `/mr` from this plugin for ad hoc or non-JIRA-tracked MRs, or in repos without the JIRA tracker installed. The two commands do not conflict.

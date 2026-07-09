@@ -6,6 +6,7 @@ Plugin marketplace shipping plugins to **Cursor**, **Codex**, and **Claude Code*
 - **`umo-sdlc`** — Markdown-first docs buckets, typed document lifecycles, service passports, `service.catalog.json` sidecars, Beads planning, and SDD/TDD routing. Ships skills (`docs`, `planning`, `how-to`) and slash commands (`/sdd`, `/docs`, `/planning`, `/how-to`).
 - **`umo-effect`** — **Effect-TS**: always-on **`effect-awareness`** rule plus the **`effect-ts`** skill (`skills/effect-ts/`, guides under `references/`). Load the skill when work involves Effect; the rule keeps orientation in context.
 - **`umo-jira-tracker`** — Automates the daily JIRA developer workflow: syncs unresolved tickets into a local Beads database (Story-as-epic mapping), drives bead-by-bead work with AC refinement, creates GitLab MRs via `glab`/GitLab MCP using STD-JIRA naming, and syncs outcomes (MR links, transitions, new sub-tasks) back to JIRA with approval gates. Ships skills (`jira-tracker-setup`, `jira-sync`, `jira-bead-bridge`, `gitlab-mr`, `jira-sync-back`) and slash commands (`/setup`, `/sync`, `/work`, `/create`, `/commit`, `/mr`, `/close`).
+- **`umo-mr`** — Org-default `/mr` command for creating GitLab merge requests in any repo, active whenever the developer or agent wants to create one: parses intent, autodetects the repo's default branch, always creates a new branch, plans conventional commits, previews, pushes, creates the MR via `glab` (preferred) or GitLab MCP (fallback), and optionally syncs JIRA. Ships trunk-based, squash-merge, commitlint-safe defaults (ported from the `saas` repo), overridable per repo via `.umo/mr.json`. Ships the `gitlab-mr` skill, the `/mr` command, and an always-on rule.
 
 | Host | Marketplace file | Plugin manifest | MCP config |
 |---|---|---|---|
@@ -30,7 +31,7 @@ The Brain MCP endpoint is configured by the plugin.
 ### Cursor
 
 1. Settings → **Plugins**.
-2. Add this marketplace and install `umo-brain`, `umo-sdlc`, and/or `umo-effect`.
+2. Add this marketplace and install `umo-brain`, `umo-sdlc`, `umo-mr`, and/or `umo-effect`.
 3. Reload the window.
 4. Enable the `david-brain` MCP server under **Features → Model Context Protocol**.
 
@@ -104,12 +105,19 @@ Parses every manifest, checks SKILL/command frontmatter, and runs `claude plugin
 │   │   ├── .codex-plugin/plugin.json
 │   │   ├── skills/effect-ts/
 │   │   └── rules/effect-awareness.mdc
-│   └── umo-jira-tracker/
+│   ├── umo-jira-tracker/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── .cursor-plugin/plugin.json
+│   │   ├── .codex-plugin/plugin.json
+│   │   ├── skills/{jira-tracker-setup,jira-sync,jira-bead-bridge,gitlab-mr,jira-sync-back}/
+│   │   ├── commands/{setup,sync,work,create,commit,mr,close}.md
+│   │   └── rules/jira-tracker.mdc
+│   └── umo-mr/
 │       ├── .claude-plugin/plugin.json
 │       ├── .cursor-plugin/plugin.json
 │       ├── .codex-plugin/plugin.json
-│       ├── skills/{jira-tracker-setup,jira-sync,jira-bead-bridge,gitlab-mr,jira-sync-back}/
-│       ├── commands/{setup,sync,work,create,commit,mr,close}.md
-│       └── rules/jira-tracker.mdc
+│       ├── skills/gitlab-mr/{SKILL.md,references/{glab.md,mcp.md}}
+│       ├── commands/mr.md
+│       └── rules/umo-mr.mdc
 └── scripts/validate-claude.sh
 ```

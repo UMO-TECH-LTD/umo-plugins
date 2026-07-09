@@ -1,0 +1,37 @@
+{
+  "name": "umo-mr",
+  "version": "0.1.0",
+  "description": "UMO MR — the org-default /mr command for creating GitLab merge requests, active whenever the developer or agent wants to create one: parses intent, autodetects the default branch, always creates a new branch, organizes conventional commits, previews, pushes, creates the MR (glab preferred, GitLab MCP fallback), and optionally syncs JIRA. Ships trunk-based, squash-merge, commitlint-safe defaults from the saas repo, overridable per repo via .umo/mr.json.",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": ["umo", "umo-mr", "mr", "merge-request", "gitlab", "glab", "conventional-commits", "trunk-based", "squash-merge", "jira"],
+  "license": "UNLICENSED",
+  "logo": "./assets/umo.svg",
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "umoComposition": {
+    "apiVersion": "umo.plugins/v1",
+    "core": true,
+    "precedence": 10,
+    "dependsOn": [],
+    "optionalDependsOn": ["umo-jira-tracker"],
+    "owns": ["mr-creation", "gitlab-mr"]
+  },
+  "interface": {
+    "displayName": "UMO MR",
+    "shortDescription": "Org-default /mr command — branch, commit, push, and create GitLab MRs with UMO conventions.",
+    "longDescription": "UMO MR is the org-default plugin for creating GitLab merge requests from natural language, and is always active — invoke it whenever the developer asks to create, open, or push an MR, or whenever finished work is ready to ship. It parses your intent, autodetects the repo's default branch (never hardcoding main), always creates a new branch for the MR unless you say otherwise, guards protected branches, organizes uncommitted work into logical conventional commits with an approval gate, previews the MR title and description, pushes on approval, and creates the MR via the glab CLI by default (falling back to GitLab MCP when glab is unavailable or fails). It applies trunk-based, squash-merge, commitlint-safe conventions (Conventional Commit titles with the JIRA key in parentheses at the end) by default, and can optionally comment on and transition a linked JIRA ticket. Defaults are ported from the UMO saas repo and are overridable per repo via .umo/mr.json.",
+    "developerName": "UMO Platform Team",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "defaultPrompt": [
+      "Run /mr to create a GitLab MR from my current changes.",
+      "Run /mr create new branch for CWN-1234 to start a ticketed MR.",
+      "Run /mr push current branch and create MR."
+    ],
+    "brandColor": "#1F6FEB",
+    "composerIcon": "./assets/umo.svg",
+    "logo": "./assets/umo.svg"
+  }
+}
