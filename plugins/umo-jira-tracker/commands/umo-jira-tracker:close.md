@@ -1,5 +1,5 @@
 ---
-description: Close the current bead with evidence, post a closing comment to JIRA, and transition the ticket to Done (or the configured transitionOnClose). All JIRA mutations are approval-gated.
+description: Close the current bead with evidence, post a closing comment to JIRA, and transition the Task or Bug to Done (or the configured transitionOnClose). All JIRA mutations are approval-gated.
 ---
 
 # /umo-jira-tracker:close
@@ -12,7 +12,7 @@ Closes a bead and syncs the outcome back to JIRA. Always previews the comment an
 
 | Input | Meaning |
 |-------|---------|
-| `CWN-1234` or `[A-Z]+-\d+` | Close the bead labelled `jira:CWN-1234` |
+| `PAY-1234` or `[A-Z]+-\d+` | Close the bead labelled `jira:PAY-1234` |
 | Numeric bead ID | Close that bead directly |
 | (empty) | Detect from currently claimed bead; ask if ambiguous |
 
@@ -49,8 +49,14 @@ Report: `Bead {id} closed.`
 
 Use the `jira-sync-back` skill (from your skills list) — `/close` combined flow:
 
-1. Preview closing comment and transition.
-2. On approval: post comment, then transition.
+1. Preview the closing comment and the transition.
+2. On approval: post the comment, then transition.
+
+**Check the issue's current status first.** `Task Done = PR merged, all existing tests green`, and org automation flips the Task when the MR merges. If it is already Done, say so and skip the transition rather than re-applying it.
+
+**Only Tasks and Bugs are transitioned from here.** If the key resolves to a Slice, Flow or Request, close the bead and stop — Slice gates are validated on the board, Flow status is derived from its children, and a Request is Closed by the consumer on proof.
+
+**Done, not Retired.** If the work was abandoned rather than delivered, that is a Retired transition with a mandatory Resolution, and it is a different conversation — do not reach for `transitionOnClose`.
 
 ### Step 5 — Report
 
@@ -66,6 +72,6 @@ Done!
 
 ```
 /umo-jira-tracker:close
-/umo-jira-tracker:close CWN-1234
+/umo-jira-tracker:close PAY-1234
 /umo-jira-tracker:close 42
 ```

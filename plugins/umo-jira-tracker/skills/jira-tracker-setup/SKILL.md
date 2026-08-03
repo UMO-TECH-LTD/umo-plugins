@@ -1,6 +1,6 @@
 ---
 name: jira-tracker-setup
-description: First-run setup wizard for umo-jira-tracker. Verifies bd, glab, Atlassian MCP, and optional GitLab MCP; collects sync scope (all open vs active sprint); writes or updates .umo/jira-tracker.json. Use when setting up the plugin in a new repo or reconfiguring an existing installation.
+description: First-run setup wizard for umo-jira-tracker. Verifies bd, glab, Atlassian MCP, and optional GitLab MCP; collects the squad project key and sync scope (all open, one flow, or one slice); writes or updates .umo/jira-tracker.json. Use when setting up the plugin in a new repo or reconfiguring an existing installation.
 paths:
   - ".umo/jira-tracker.json"
   - ".umo/"
@@ -61,19 +61,24 @@ Re-run /umo-jira-tracker:setup after authentication.
 
 ### Sync scope presets
 
-`/sync` reads `jira.syncJql` from config. Offer two presets during setup — do not ask the developer to type raw JQL unless they explicitly want a custom query:
+`/sync` reads `jira.syncJql` from config. Offer these presets during setup — do not ask the developer to type raw JQL unless they explicitly want a custom query:
 
 | Preset | Label | `syncJql` value |
 |--------|-------|-----------------|
-| `all-open` | All open assigned tickets | `assignee = currentUser() AND statusCategory != Done` |
-| `active-sprint` | Active sprint only | `assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done` |
+| `all-open` | All open assigned issues | `assignee = currentUser() AND statusCategory != Done` |
+| `flow` | One flow, everything serving it | `issuekey in portfolioChildIssuesOf("{FLOW-KEY}")` |
+| `slice` | One slice | `parent = {SLICE-KEY} OR issuekey = {SLICE-KEY}` |
+
+There is no active-sprint preset — the Sprint field is unused org-wide. If a
+developer asks for one, say so and offer the flow preset instead: the flow view
+is the org's equivalent, and it crosses projects.
 
 Helper — map an existing `syncJql` back to a label for display:
 
-- exact match on either preset → show the preset label
+- exact match on a preset → show the preset label
 - anything else → show `Custom` and print the stored JQL verbatim
 
-When Atlassian MCP is connected, optionally dry-run both presets before the developer chooses:
+When Atlassian MCP is connected, optionally dry-run the presets before the developer chooses:
 
 ```
 CallMcpTool -> Atlassian / searchJiraIssuesUsingJql
@@ -82,7 +87,7 @@ CallMcpTool -> Atlassian / searchJiraIssuesUsingJql
   maxResults: 0
 ```
 
-Show the `total` from each preset so the developer can compare (e.g. 42 all-open vs 4 active-sprint). Skip the dry-run if MCP is unavailable — fall back to the choice prompt only.
+Show the `total` from each preset so the developer can compare. Skip the dry-run if MCP is unavailable — fall back to the choice prompt only.
 
 ### Existing config
 
@@ -91,10 +96,9 @@ If `.umo/jira-tracker.json` already exists, read it and present a diff-style sum
 ```
 Current config (.umo/jira-tracker.json):
   jira.cloudUrl          = https://umotech.atlassian.net
-  jira.defaultProjectKey = CWN
-  jira.syncScope         = All open assigned tickets
+  jira.defaultProjectKey = PAY
+  jira.syncScope         = All open assigned issues
   jira.syncJql           = assignee = currentUser() AND statusCategory != Done
-  jira.transitionOnMr    = In Review
   jira.transitionOnClose = Done
   gitlab.remote          = origin
   gitlab.projectId       = 110
@@ -117,16 +121,39 @@ Ask each question with a sensible default shown (fresh install or update):
 | Question | Default |
 |----------|---------|
 | JIRA cloud URL | `https://umotech.atlassian.net` |
-| Default JIRA project key | (detect from Atlassian MCP accessible resources) |
-| Sync scope (`/sync`) | Present the two presets above; default `all-open` |
+| Squad project key | (detect from Atlassian MCP accessible resources; must be one of the ten squad keys below) |
+| Sync scope (`/sync`) | Present the presets above; default `all-open` |
 | Sync direction | `both` (pull + push). Alternatives: `pull` only, `push` only |
-| Push Sub-tasks by default? | `no` — Sub-task beads are skipped unless opted-in per bead. Alternative: `yes` to push everything |
-| JIRA transition name when MR created | `In Review` |
 | JIRA transition name when bead closed | `Done` |
 | Git remote name | `origin` |
 | GitLab project ID (leave blank to auto-resolve on first /mr) | (blank) |
 | Default target branch for MRs | `dev` |
 | Preferred MR tool (`glab` or `mcp`) | `glab` |
+
+Do **not** ask about sprints, story points, estimates or sub-task pushing. None of
+them exist in the org's encoding.
+
+There is no `transitionOnMr`. MR creation never transitions Jira — a developer may
+open several MRs for one ticket, and Task Done belongs to the merged-PR automation.
+
+**Squad project keys.** Projects match squads, one team backlog each:
+
+| Key | Project |
+|---|---|
+| PLAT | Platform |
+| DATA | Data |
+| AI | AI |
+| EXP | Experience *(squad: Customer Experience)* |
+| CRY | Crypto |
+| PAY | Payments |
+| CARD | Cards |
+| FIN | Financial Core *(squad: Transactions & Accounting)* |
+| CMP | Compliance/Support |
+| BO | Backoffice Portal |
+
+If the detected or entered key is not in this list, ask the developer to confirm
+it. A key outside the squad map is usually a legacy project, and the five-type
+model will not hold there.
 
 **Sync direction prompt:**
 
@@ -142,39 +169,35 @@ Choice [1]:
 
 Store the choice as `sync.direction` (`both` / `pull` / `push`).
 
-**Sub-task policy prompt:**
+Mention what push actually does, so the choice is informed:
 
 ```
-Push sub-tasks by default?
-
-  Sub-tasks are usually small implementation items that the team prefers to keep
-  in Beads. The default answer is NO. A bead can still be force-pushed by adding
-  the `jira-push` label to it.
-
-  yes / no [no]:
+Push promotes a bead into a JIRA Task or Bug under a Slice. It never creates
+Flows, Slices or Requests, and it never mirrors your execution plan — steps
+inside one Task stay in Beads.
 ```
-
-Store the answer as `sync.pushSubtasks` (`true` / `false`).
 
 **Sync scope prompt** — present as a numbered choice, not a free-text JQL field:
 
 ```
 What should /sync pull from JIRA?
 
-  1) All open assigned tickets (default)
+  1) All open assigned issues (default)
      assignee = currentUser() AND statusCategory != Done
      → {totalAllOpen} issues  (omit counts if dry-run skipped)
 
-  2) Active sprint only
-     assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done
-     → {totalActiveSprint} issues
+  2) One flow — everything serving it, across all projects
+     issuekey in portfolioChildIssuesOf("{FLOW-KEY}")
 
-  3) Custom JQL (advanced — only if the developer asks)
+  3) One slice
+     parent = {SLICE-KEY} OR issuekey = {SLICE-KEY}
+
+  4) Custom JQL (advanced — only if the developer asks)
 
 Choice [1]:
 ```
 
-Write the selected preset's JQL into `jira.syncJql`. For option 3, accept custom JQL and store it verbatim.
+For options 2 and 3, ask for the flow or slice key and substitute it. For option 4, accept custom JQL and store it verbatim. Write the result into `jira.syncJql`.
 
 Detect the project key from Atlassian MCP accessible resources if possible:
 
@@ -293,10 +316,9 @@ Next steps:
 ```json
 {
   "jira": {
-    "cloudUrl": "https://yourorg.atlassian.net",
-    "defaultProjectKey": "CWN",
+    "cloudUrl": "https://umotech.atlassian.net",
+    "defaultProjectKey": "PAY",
     "syncJql": "assignee = currentUser() AND statusCategory != Done",
-    "transitionOnMr": "In Review",
     "transitionOnClose": "Done"
   },
   "gitlab": {
@@ -308,13 +330,12 @@ Next steps:
   "beads": {
     "labelPrefix": "jira",
     "titleFormat": "[{key}] {summary}",
-    "epicTypes": ["Epic", "Story"],
-    "taskTypes": ["Task", "Bug", "Sub-task"]
+    "containerTypes": ["Flow", "Slice"],
+    "workTypes": ["Task", "Bug", "Request"],
+    "creatableTypes": ["Task", "Bug"]
   },
   "sync": {
     "direction": "both",
-    "pushSubtasks": false,
-    "pushLabel": "jira-push",
     "skipLabel": "jira-skip",
     "recentlyDoneWindow": "-14d"
   },
@@ -327,12 +348,34 @@ Next steps:
 }
 ```
 
+### `beads` block reference
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `beads.containerTypes` | `["Flow", "Slice"]` | JIRA types that pull down as `epic` beads |
+| `beads.workTypes` | `["Task", "Bug", "Request"]` | JIRA types that pull down as `task` beads |
+| `beads.creatableTypes` | `["Task", "Bug"]` | The only types this plugin may create. Widening this list does **not** make Story or Sub-task work — they do not exist in the org's Jira |
+
 ### `sync` block reference
 
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `sync.direction` | `both` | `both` / `pull` / `push`. Controls which phases of `/sync` run by default |
-| `sync.pushSubtasks` | `false` | When `false`, sub-task candidates are skipped during push unless they carry `{sync.pushLabel}` |
-| `sync.pushLabel` | `jira-push` | Bead label that forces inclusion in push (overrides Sub-task skip and per-run dry-run cherry-pick defaults) |
 | `sync.skipLabel` | `jira-skip` | Bead label that forces exclusion from push regardless of any other rule |
-| `sync.recentlyDoneWindow` | `-14d` | JQL relative time window for the recently-Done pull extension (Phase A drift detection) |
+| `sync.recentlyDoneWindow` | `-14d` | JQL relative time window for the recently-closed pull extension (Phase A drift detection) |
+
+There is no `pushSubtasks` or `pushLabel` key. Sub-tasks do not exist, and push is
+opt-**out** by design: the classifier already declines anything that is not a unit
+of delivery, so an opt-in label would only be a way to override a rule that exists
+for a reason.
+
+### Keys deliberately absent
+
+| Key | Why |
+|---|---|
+| `jira.defaultSprintId` | the Sprint field is unused org-wide |
+| `jira.transitionOnMr` | MR creation never transitions Jira; Task Done belongs to the merged-PR automation |
+| `sync.pushSubtasks`, `sync.pushLabel` | see above |
+
+If you find these in an existing config, drop them during the update pass and tell
+the developer why.

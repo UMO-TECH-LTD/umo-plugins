@@ -20,7 +20,7 @@ Parse the input:
 
 | Input form | Resolution |
 |------------|------------|
-| `CWN-1234` | Look up bead by label `jira:CWN-1234`; if not found, prompt to run `/sync` first |
+| `PAY-1234` | Look up bead by label `jira:PAY-1234`; if not found, prompt to run `/sync` first |
 | `<bead-id>` | `bd show {id} --json`; extract `jira:` label for JIRA key |
 | `--ready` | `bd ready --json`; present the list and ask the developer to pick one |
 | (empty) | `bd ready --json`; present the top 5 and ask |
@@ -38,10 +38,11 @@ CallMcpTool -> Atlassian / getJiraIssue
 Show a structured summary:
 
 ```
-Working on: [CWN-1234] Add Kafka retry logic
-  JIRA: https://yourorg.atlassian.net/browse/CWN-1234
-  Type: Story  |  Status: In Progress  |  Priority: Medium
-  Sprint: Sprint 12
+Working on: [PAY-1234] [IC-S2] Retry publishes survive a broker restart
+  JIRA:  https://umotech.atlassian.net/browse/PAY-1234
+  Type:  Task  |  Status: In Progress  |  Priority: Medium
+  Slice: PAY-1200 — [IC-S2] Client can see their status
+  Flow:  PAY-900 — [IC] Client onboarding
 
 Acceptance Criteria (from JIRA):
   1. Retry up to 3 times with exponential back-off
@@ -54,22 +55,30 @@ Notes (from bead):
 Claim this bead and start working? (yes/no)
 ```
 
-### Step 2b — Resume from Code Review (CWN)
+### Step 2b — Resume a ticket that is not in a startable state
 
-If JIRA status is **Code Review** and the project key is **CWN** (or `references/transitions.md` documents a multi-step path from the current status to **In Progress**):
+The Task workflow is `To Do → In Progress → Done` plus a global `Retired`. If the
+ticket is already **In Progress**, claim and continue.
+
+If it sits anywhere else and the developer wants to resume, resolve the available
+transitions live (`getTransitionsForJiraIssue`) and offer the move:
 
 ```
-This ticket is in Code Review. Resuming work requires a two-step JIRA transition:
-  1. Move To Do (id 9)
-  2. Start progress (id 11)
-
-Transition to In Progress before claiming? (yes/no)
+{KEY} is currently "{status}". Move it to In Progress before claiming? (yes/no)
 ```
 
-- **yes** → delegate to `jira-sync-back` **Operation B-multi** (single preview for both steps). On success, continue to Step 3.
-- **no** → continue to Step 3 without changing JIRA status (bead can still be claimed locally).
+- **yes** → delegate to `jira-sync-back` **Operation B**, or **Operation B-multi**
+  when no direct edge exists. Either way, one preview covering every step, before
+  any of them run. On success, continue to Step 3.
+- **no** → continue to Step 3 without changing JIRA status (the bead can still be
+  claimed locally).
 
-For other blocking statuses (e.g. **Ready for Testing**, **In Testing**), mention the current status and ask whether to transition manually on the board — do not auto-transition without a cached multi-step path.
+**Guardrails.** Only Tasks and Bugs are transitioned from here. If the resolved
+issue is a **Slice**, a **Flow** or a **Request**, say so and stop: Slice gates are
+validated on the board, Flow status is derived from its children, and Request
+states are the provider's and consumer's acts. Never offer **Retired** as a way to
+get unstuck — it means withdrawn without being completed and is excluded from
+every count.
 
 ## Step 3 — Claim
 
@@ -92,7 +101,8 @@ Open a free-form discussion with the developer:
 
 Rules:
 - Do not start implementation in this skill — this is planning/AC-refinement only.
-- Offer to use `/umo-jira-tracker:create sub-task --parent {KEY}` for any discovered sub-tasks.
+- Decompose freely **in Beads**. Steps inside this Task are an engineering artifact and stay in git; they are not synced to Jira.
+- Only when a discovered piece is a separate **unit of assignment or delivery** does it need its own Jira Task — and it is a **sibling** under the same Slice, never a child of this ticket. See "Mid-flow: discovered work" below.
 - Keep discussion focused on the current ticket; spin off new tickets for scope creep.
 
 ## Step 5 — Store decisions in bead
@@ -169,23 +179,48 @@ Only post when the developer explicitly approves. Never silently modify JIRA.
 ## Step 7 — Handoff
 
 ```
-Bead CWN-1234 is ready.
+Bead PAY-1234 is ready.
 
 Next steps:
   Implement the feature, then:
   /umo-jira-tracker:commit  — create conventional commits
   /umo-jira-tracker:mr      — create MR and update JIRA
-  /umo-jira-tracker:create sub-task --parent CWN-1234  — if you found sub-tasks
+
+  Decompose further with `bd create --parent` — steps stay in Beads.
+  /umo-jira-tracker:create task --parent PAY-1200  — only if you found a
+      separate unit of delivery (sibling under the same Slice)
 ```
 
-## Mid-flow: sub-task detection
+## Mid-flow: discovered work
 
-During the discussion, if the agent identifies a logical sub-task that warrants a separate JIRA ticket (e.g., "this needs a separate migration step"), proactively offer:
+During the discussion the agent will identify pieces of work that were not in the
+original ticket. Most of them are **steps**, and steps live in Beads:
+
+```bash
+bd create "Write the migration" --type task --parent {current-bead-id}
+```
+
+That is the default and it needs no Jira round-trip. The 01.08 ruling is explicit
+that the execution plan inside one task is an engineering artifact living in git.
+
+Escalate to a Jira Task only when the piece is a **unit of assignment or
+delivery** — someone will work on it for a meaningful stretch, or QA, the PM, the
+EM or the CTO needs to see its status. Then it is a **sibling**, parented to the
+same Slice:
 
 ```
-This looks like a separate sub-task. Want me to create a new Sub-task under CWN-1234?
-Run: /umo-jira-tracker:create sub-task --parent CWN-1234
-Or just say "create sub-task for <description>" and I'll handle it.
+This looks like a separate unit of delivery rather than a step in PAY-1234.
+
+  Step      → stays in Beads (bd create --parent {bead-id})
+  Unit      → its own Task under the same Slice ({SLICE-KEY})
+
+Which is it? (step / unit)
 ```
 
-Invoke the `jira-sync-back` creation path with `parentKey = CWN-1234` on confirmation.
+On `unit`, invoke the `jira-sync-back` creation path with
+`parentKey = {SLICE-KEY}` — resolved by walking from the current ticket to its
+parent Slice, **not** the current ticket itself. A Task cannot own a Task; the
+Sub-task type does not exist in this org.
+
+You rarely need to force this call. The merge gate settles it: no MR merges
+without a Jira Task, so anything that ends in a merge acquires one by definition.

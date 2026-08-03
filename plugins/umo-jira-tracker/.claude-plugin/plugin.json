@@ -1,7 +1,7 @@
 {
   "name": "umo-jira-tracker",
   "version": "0.1.2",
-  "description": "UMO JIRA Tracker — links JIRA tickets to a local Beads database, automates sprint sync, drives commit/MR creation with STD-JIRA naming, and syncs results back to JIRA on bead close or MR creation.",
+  "description": "UMO JIRA Tracker — links JIRA issues to a local Beads database on the org's five-type work-tracking model (Flow, Slice, Task, Request, Bug), drives commit/MR creation with the mandatory JIRA key, and syncs results back to JIRA on bead close.",
   "author": {
     "name": "UMO Platform Team"
   },
@@ -16,10 +16,10 @@
     "gitlab",
     "glab",
     "mr",
-    "sprint",
+    "flow",
+    "slice",
     "sync",
-    "conventional-commits",
-    "std-jira"
+    "conventional-commits"
   ],
   "skills": "./skills",
   "commands": "./commands"

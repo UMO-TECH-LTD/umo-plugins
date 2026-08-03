@@ -13,11 +13,11 @@ Use when the GitLab MCP is unavailable or fails, and the `/umo-jira-tracker:mr` 
 
 ## Naming standard
 
-> Based on the internal Confluence standard **"STD-JIRA and GitLab Branch/MR Naming"**.
+- **Branch:** `{type}/{JIRA-KEY}-{short-description}` — type one of `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build`; short-description 2–5 words kebab-case. e.g. `feat/PAY-1234-add-kafka-retry`
+- **MR title:** `{type}(scope): lowercase imperative subject (JIRA-KEY)` e.g. `feat(publisher): add kafka retry (PAY-1234)` — Conventional Commits with the JIRA key in parentheses at the **end**, which keeps the title commitlint-safe.
+- **Commit:** `type(scope): description` (Conventional Commits); include the JIRA key in the footer or the branch name.
 
-- **Branch:** `{type}/{JIRA-KEY}-{short-description}` — type one of `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build`; short-description 2–5 words kebab-case. e.g. `feat/CWN-1234-add-kafka-retry`
-- **MR title:** `{JIRA-KEY}: {Short description}` e.g. `CWN-1234: Add Kafka retry` — JIRA key at the start triggers GitLab auto-linking; conventional commit type prefix is **not** required here.
-- **Commit:** `type(scope): description` (Conventional Commits); include JIRA key in footer or branch name.
+**The JIRA key is mandatory.** No MR merges without a JIRA Task, the merge commit references it, a CI check fails a title that lacks it, and the merged-PR automation reads it to flip the Task to Done. Never construct a keyless branch or title here.
 
 ## Prerequisites
 
@@ -63,10 +63,10 @@ Replace title, branch, and description as needed. Always include `--assignee` us
 glab mr create \
   --target-branch {target-branch} \
   --source-branch "$(git branch --show-current)" \
-  --title "{JIRA-KEY}: {Short description}" \
+  --title "{type}(scope): lowercase imperative subject ({JIRA-KEY})" \
   --assignee {user.gitlabUsername} \
   --description "$(cat <<'EOF'
-## JIRA Ticket
+## JIRA Task
 [{JIRA-KEY}](https://umotech.atlassian.net/browse/{JIRA-KEY})
 
 ## What this MR does?

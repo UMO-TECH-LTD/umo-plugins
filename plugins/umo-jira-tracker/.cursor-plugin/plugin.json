@@ -1,7 +1,7 @@
 {
   "name": "umo-jira-tracker",
   "version": "0.1.2",
-  "description": "UMO JIRA Tracker — links JIRA tickets to a local Beads database, automates sprint sync, drives commit/MR creation with STD-JIRA naming, and syncs results back to JIRA on bead close or MR creation.",
+  "description": "UMO JIRA Tracker — links JIRA issues to a local Beads database on the org's five-type work-tracking model (Flow, Slice, Task, Request, Bug), drives commit/MR creation with the mandatory JIRA key, and syncs results back to JIRA on bead close.",
   "author": {
     "name": "UMO Platform Team"
   },
@@ -14,10 +14,10 @@
     "gitlab",
     "glab",
     "mr",
-    "sprint",
+    "flow",
+    "slice",
     "sync",
-    "conventional-commits",
-    "std-jira"
+    "conventional-commits"
   ],
   "license": "UNLICENSED",
   "logo": "./assets/umo.svg",
@@ -40,15 +40,15 @@
   },
   "interface": {
     "displayName": "UMO JIRA Tracker",
-    "shortDescription": "Sprint sync, JIRA↔Beads bridge, commit/MR creation, and JIRA sync-back.",
-    "longDescription": "Automates the daily developer JIRA workflow: syncs your unresolved sprint tickets into a local Beads database, maps Epics/Stories/Tasks into the bead hierarchy, guides bead-by-bead work with AC drafting, creates GitLab MRs via glab (or GitLab MCP) using STD-JIRA naming, and syncs outcomes (MR links, transitions, new sub-tasks) back to JIRA — all with explicit approval gates.",
+    "shortDescription": "JIRA↔Beads bridge on the five-type work model, commit/MR creation, and JIRA sync-back.",
+    "longDescription": "Automates the daily developer JIRA workflow on the org's canonical work-tracking model: pulls Flows, Slices, Tasks, Bugs and Requests into a local Beads database, guides bead-by-bead work with AC drafting, creates GitLab MRs via glab (or GitLab MCP) with the mandatory JIRA key, and syncs outcomes back to JIRA — all with explicit approval gates. It creates Tasks and Bugs under a Slice and nothing else: Flows, Slices and Requests are the flow PM's to author, and the execution plan inside one Task stays in git.",
     "developerName": "UMO Platform Team",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],
     "defaultPrompt": [
       "Run /umo-jira-tracker:setup to configure this repo.",
-      "Run /umo-jira-tracker:sync to pull my unresolved JIRA tickets into Beads.",
-      "Run /umo-jira-tracker:work CWN-1234 to start working on a ticket.",
+      "Run /umo-jira-tracker:sync to pull my unresolved JIRA issues into Beads.",
+      "Run /umo-jira-tracker:work PAY-1234 to start working on a task.",
       "Run /umo-jira-tracker:mr to create a GitLab MR and update JIRA.",
       "Run /umo-jira-tracker:close to close the bead and transition JIRA."
     ],

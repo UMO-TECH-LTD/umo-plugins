@@ -1,18 +1,18 @@
 ---
-description: Analyze changes, group them into atomic conventional commits, create the commits immediately, and generate an MR description. Follows STD-JIRA naming — JIRA key in commit footer and MR title. Ported from the UMO saas repo commit workflow.
+description: Analyze changes, group them into atomic conventional commits, create the commits immediately, and generate an MR description. The JIRA Task key belongs in the branch, the MR title and the merge commit. Ported from the UMO saas repo commit workflow.
 ---
 
 # /umo-jira-tracker:commit
 
 ## Naming standard
 
-> Based on the internal Confluence standard **"STD-JIRA and GitLab Branch/MR Naming"**.
-
 - **Branch:** `{type}/{JIRA-KEY}-{short-description}` — types: `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build`; short-description 2–5 words kebab-case.
-- **Commit:** `type(scope): description` (Conventional Commits) — include JIRA key in footer (`Closes: CWN-1234`) or branch name.
-- **MR title:** `{JIRA-KEY}: {Description}` — conventional type prefix is **not** required in MR titles, only in commit messages.
+- **Commit:** `type(scope): description` (Conventional Commits) — include the JIRA key in the footer (`Closes: PAY-1234`) or the branch name.
+- **MR title:** `{type}(scope): lowercase imperative subject (JIRA-KEY)` — Conventional Commits with the key in parentheses at the **end**, which keeps it commitlint-safe.
 
-If a JIRA key is associated with the current branch (detectable from branch name pattern `{type}/{KEY}-{slug}`) or from the currently claimed bead, include it in the MR title: `{KEY}: {description}`.
+Resolve the JIRA key from the branch name (pattern `{type}/{KEY}-{slug}`) or the currently claimed bead.
+
+**The merge gate:** no MR merges without a JIRA Task, and the merge commit references it. If no key resolves, say so here rather than at push time — `/umo-jira-tracker:mr` will stop for it anyway, and the CI title check will fail the MR.
 
 ---
 
@@ -138,13 +138,14 @@ After all commits are created:
 
 4. **Generate MR description** with title and copyable markdown snippet:
 
-**MR Title:** `{JIRA-KEY}: Brief description of the overall change`
-(Without JIRA key: `type(scope): description`)
+**MR Title:** `{type}(scope): lowercase imperative subject ({JIRA-KEY})`
+
+If no key resolves, say so — the MR cannot merge without a Task and CI will fail the title.
 
 **MR Description (copy this):**
 
 ```markdown
-## JIRA Ticket
+## JIRA Task
 [{JIRA-KEY}](https://umotech.atlassian.net/browse/{JIRA-KEY})
 
 ## What this MR does?
@@ -214,13 +215,13 @@ All 3 commits created successfully!
 
 ## MR Description
 
-**MR Title:** `CWN-4567: Add Redis caching with API response headers`
+**MR Title:** `feat(cache): add redis caching with api response headers (PAY-4567)`
 
 **MR Description (copy this):**
 
 ```markdown
-## JIRA Ticket
-[CWN-4567](https://umotech.atlassian.net/browse/CWN-4567)
+## JIRA Task
+[PAY-4567](https://umotech.atlassian.net/browse/PAY-4567) — under slice [PAY-4500](https://umotech.atlassian.net/browse/PAY-4500)
 
 ## What this MR does?
 Adds Redis-based caching service with TTL support and integrates cache headers into API responses for improved performance.
