@@ -1,5 +1,5 @@
 ---
-description: Analyze changes, group them into atomic conventional commits with a developer-approved plan, create the commits, and generate an MR description. Follows STD-JIRA naming — JIRA key in commit footer and MR title. Ported from the UMO saas repo commit workflow.
+description: Analyze changes, group them into atomic conventional commits, create the commits immediately, and generate an MR description. Follows STD-JIRA naming — JIRA key in commit footer and MR title. Ported from the UMO saas repo commit workflow.
 ---
 
 # /umo-jira-tracker:commit
@@ -22,7 +22,7 @@ If a JIRA key is associated with the current branch (detectable from branch name
 
 Analyze completed work, organize changes into logical commits, and create well-structured commit messages following the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 
-This command helps split a batch of changes into atomic, meaningful commits grouped by feature or purpose.
+This command helps split a batch of changes into atomic, meaningful commits grouped by feature or purpose. When the developer asks to commit, **plan internally and create commits immediately** — do not present a plan and wait for "yes/no/adjust".
 
 ## Workflow
 
@@ -57,9 +57,9 @@ Each commit should be:
 - **Buildable**: Code compiles/runs after this commit
 - **Logical**: Changes belong together conceptually
 
-### Step 3: Prepare Commit Plan
+### Step 3: Plan Commits Internally
 
-For each proposed commit, determine:
+For each commit, determine:
 
 | Attribute | Description |
 |-----------|-------------|
@@ -70,56 +70,9 @@ For each proposed commit, determine:
 | **Files** | List of files to include in this commit |
 | **Order** | Sequence matters - dependencies before dependents |
 
-### Step 4: Present Commit Plan for Review
+Do **not** show a proposed-commit preview and wait for approval. Proceed to Step 4 immediately.
 
-Present the plan in this format, including exact git commands:
-
-```
-## Proposed Commits
-
-### Commit 1 of N
-**Message:** `feat(auth): add user authentication service`
-**Files:**
-- src/service/auth_service.ts
-- src/domain/user.ts
-
-**Rationale:** Groups core authentication logic together
-
-**Commands:**
-```bash
-git add src/service/auth_service.ts src/domain/user.ts
-git commit -m "feat(auth): add user authentication service"
-```
-
----
-
-### Commit 2 of N
-**Message:** `feat(api): add login and logout HTTP endpoints`
-**Files:**
-- src/infra/http/auth_handler.ts
-- src/infra/http/routes.ts
-
-**Rationale:** HTTP layer depends on service from commit 1
-
-**Commands:**
-```bash
-git add src/infra/http/auth_handler.ts src/infra/http/routes.ts
-git commit -m "feat(api): add login and logout HTTP endpoints"
-```
-
----
-
-(continue for all commits...)
-
-## Summary
-- Total commits: N
-- Types: X feat, Y fix, Z chore
-- Breaking changes: Yes/No
-
-Ready to proceed? (yes/no/adjust)
-```
-
-For multi-line commit messages, show the full heredoc syntax:
+For multi-line commit messages, use heredoc syntax:
 
 ```bash
 git add file1 file2
@@ -133,7 +86,7 @@ EOF
 )"
 ```
 
-### Step 5: Execute Commits (After Approval)
+### Step 4: Execute Commits Immediately
 
 For each commit in order:
 
@@ -159,14 +112,14 @@ For each commit in order:
    git log -1 --stat
    ```
 
-4. **Report progress:**
+4. **Report progress (post-fact, not a gate):**
    ```
    ✓ Commit 1/N created: feat(auth): add user authentication service
    ✓ Commit 2/N created: feat(api): add login and logout endpoints
    ...
    ```
 
-### Step 6: Generate MR Description
+### Step 5: Generate MR Description
 
 After all commits are created:
 
@@ -247,71 +200,9 @@ If a commit introduces breaking changes:
 ```
 User: /umo-jira-tracker:commit
 
-AI: Let me analyze your changes...
+AI: Analyzing changes, then creating commits...
 
 [Runs git status, git diff HEAD, reads changed files]
-
-## Proposed Commits
-
-### Commit 1 of 3
-**Message:** `build(deps): add redis client dependency`
-**Files:**
-- go.mod
-- go.sum
-
-**Rationale:** Dependency changes should come first
-
-**Commands:**
-```bash
-git add go.mod go.sum
-git commit -m "build(deps): add redis client dependency"
-```
-
----
-
-### Commit 2 of 3
-**Message:** `feat(cache): add Redis cache service with TTL support`
-**Files:**
-- pkg/cache/service.go
-- pkg/cache/service_test.go
-- pkg/infra/redis/client.go
-
-**Rationale:** Core caching implementation
-
-**Commands:**
-```bash
-git add pkg/cache/service.go pkg/cache/service_test.go pkg/infra/redis/client.go
-git commit -m "feat(cache): add Redis cache service with TTL support"
-```
-
----
-
-### Commit 3 of 3
-**Message:** `feat(api): add cache headers to API responses`
-**Files:**
-- pkg/infra/http/middleware/cache.go
-- pkg/infra/http/handler/user_handler.go
-
-**Rationale:** HTTP layer using the cache service
-
-**Commands:**
-```bash
-git add pkg/infra/http/middleware/cache.go pkg/infra/http/handler/user_handler.go
-git commit -m "feat(api): add cache headers to API responses"
-```
-
----
-
-## Summary
-- Total commits: 3
-- Types: 2 feat, 1 build
-- Breaking changes: No
-
-Ready to proceed? (yes/no/adjust)
-
-User: yes
-
-AI: Creating commits...
 
 ✓ Commit 1/3 created: build(deps): add redis client dependency
 ✓ Commit 2/3 created: feat(cache): add Redis cache service with TTL support
@@ -355,9 +246,9 @@ Reduce database load and improve API response times for frequently accessed data
 ```
 ```
 
-## Adjusting the Plan
+## Later Adjustments
 
-If you want to modify the proposed commits:
+If the developer asks to modify commits **after** they were created:
 
 - **"merge 2 and 3"** - Combine commits
 - **"split commit 2"** - Break into smaller commits

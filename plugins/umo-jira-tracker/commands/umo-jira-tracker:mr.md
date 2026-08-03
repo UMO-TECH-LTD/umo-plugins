@@ -1,5 +1,5 @@
 ---
-description: End-to-end MR workflow — parse intent, manage branches, commit changes, push, create a GitLab MR, and sync JIRA. Uses glab (preferred) or GitLab MCP. Follows STD-JIRA branch and MR naming. Ported from the UMO saas repo /mr workflow.
+description: End-to-end MR workflow — parse intent, auto-choose branch via protected + open-MR heuristic, commit changes, push and create a GitLab MR immediately, and sync JIRA. Uses glab (preferred) or GitLab MCP. Follows STD-JIRA branch and MR naming. Ported from the UMO saas repo /mr workflow.
 ---
 
 # /umo-jira-tracker:mr
@@ -19,7 +19,7 @@ For MR creation internals (glab flags, GitLab MCP call), use the `gitlab-mr` ski
 
 ## Overview
 
-End-to-end MR workflow: parse intent from natural language, manage branches, organize changes into logical conventional commits, push with developer approval, create a GitLab MR, and sync JIRA.
+End-to-end MR workflow: parse intent from natural language, manage branches, organize changes into logical conventional commits, **push and create a GitLab MR immediately**, and sync JIRA. Do **not** wait for a commit-plan or MR-preview approval — the developer's request is the approval. JIRA mutations still require explicit approval (Phase 7).
 
 ## Phase 1: Parse Input and Clarify
 
@@ -37,12 +37,12 @@ If a claimed bead is found, extract its JIRA key from the `jira:` label (e.g. la
 
 ### Step 1b — Reconcile with user input
 
-Extract the following from the user's free-form input. If any are ambiguous or missing, ask the developer before proceeding.
+Extract the following from the user's free-form input. Ask only when a value is truly ambiguous.
 
 | Parameter | How to detect | Default |
 |-----------|---------------|---------|
 | **JIRA key** | Regex `[A-Z]+-\d+` in input (e.g. `CWN-1234`) | Candidate from active bead (step 1a) |
-| **Branch strategy** | Keywords: "current branch", "new branch", "rename branch" | Ask |
+| **Branch strategy** | Explicit keywords: "current branch", "new branch", "rename branch"; otherwise | **Auto** (Phase 2 heuristic) |
 | **Target branch** | Keywords: "target dev", "target main", "into develop" | `dev` (from `.umo/jira-tracker.json` `gitlab.targetBranch`) |
 | **Additional context** | Anything else the developer wrote | None |
 
@@ -55,44 +55,53 @@ Extract the following from the user's free-form input. If any are ambiguous or m
   You mentioned: CWN-9999
   Which JIRA ticket should this MR be linked to? (CWN-1234 / CWN-9999 / neither)
   ```
-- No key in user input, active bead found → confirm silently:
-  ```
-  Linking this MR to active bead: [CWN-1234] {bead title}. Correct? (yes/no)
-  ```
-  If no: ask for a JIRA key or proceed without one.
+- No key in user input, active bead found → use the bead key and report it post-fact (no yes/no gate).
 - No key in user input, no active bead → JIRA key remains optional (proceed without it).
 
-If the input is empty or unclear, ask:
-
-1. Do you want to use the current branch, create a new one, or rename the current branch?
-2. Is there a JIRA ticket for this work? (default: from active bead if found)
-3. What is the target branch? (default: from config or `dev`)
+Do **not** ask "new vs current vs rename" on empty input. Do not ask for target branch when config/default applies.
 
 ## Phase 2: Branch Setup
 
-### Main branch guard
+### Resolve current branch and target
 
 ```bash
 git branch --show-current
 ```
 
-If the current branch is `main`, `master`, or `dev`:
+Store as `{current-branch}`. Target is `{target-branch}` from Phase 1 / `.umo/jira-tracker.json` (default `dev`).
 
-- **STOP.** Warn the developer: "You are on `main`/`dev`. Per convention, feature work should be on a separate branch."
-- Ask for confirmation: create a new branch, or explicitly override to stay on the protected branch.
-- Only proceed if the developer explicitly confirms after the warning.
+### Branch heuristic (no asking)
 
-### Branch strategies
+Explicit developer overrides always win when clear ("use current branch", "rename …", "create new branch").
 
-**Use current branch (non-protected):**
+Otherwise, decide automatically:
+
+1. **Protected / target branch** — if `{current-branch}` equals `{target-branch}`, or is `main`, `master`, or `dev`:
+   - Warn briefly: feature work should be on a separate branch.
+   - **Always create a new branch** (see below). Do not ask for confirmation. Do not stay on the protected branch unless the developer explicitly overrides.
+
+2. **Otherwise** — treat `{current-branch}` as the developer's feature branch. Detect open MRs (**glab preferred**, GitLab MCP fallback):
 
 ```bash
-git branch --show-current
+glab mr list --source-branch "{current-branch}"
 ```
 
-Show the branch name and confirm with the developer.
+If `glab` is unavailable, use GitLab MCP:
 
-**Create new branch:**
+```
+CallMcpTool -> gitlab / search
+  scope: "merge_requests"
+  search: "{current-branch}"
+  project_id: "{gitlab-project-id}"
+  state: "opened"
+```
+
+- **No open MR** for this source branch → **reuse** `{current-branch}` (developer-created feature branch).
+- **Open MR exists** → **reuse** `{current-branch}`; show the MR URL; push and update that MR path — do **not** create a second branch or a duplicate MR.
+
+If neither tool is available and the branch is not protected: reuse `{current-branch}` and mention `glab mr list` after auth.
+
+### Create new branch (when heuristic says create)
 
 Naming convention: `{type}/{JIRA-KEY}-{short-description}` (short-description: 2–5 words, kebab-case)
 
@@ -101,39 +110,17 @@ Available types: `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `
 - If a JIRA key is available, include it: `feat/CWN-1234-add-kafka-retry`
 - Multiple JIRA keys: `feat/CWN-1234-CWN-1235-login-refactor`
 - If no JIRA key: `feat/add-kafka-retry`
-- Derive `{short-description}` from the JIRA summary (if fetched in Phase 3) or ask the developer.
+- Derive `{short-description}` from the JIRA summary (if fetched in Phase 3) or from the diff. Do **not** stop to confirm the branch name.
 
 ```bash
 git checkout -b {branch-name}
 ```
 
-**Rename current branch:**
+### Rename current branch (only when the developer explicitly asks)
 
 ```bash
 git branch -m {old-name} {new-name}
 ```
-
-### Check for existing MR
-
-**Preferred:** GitLab MCP — check whether an MR already exists for this branch:
-
-```
-CallMcpTool -> gitlab / search
-  scope: "merge_requests"
-  search: "{branch-name}"
-  project_id: "{gitlab-project-id}"
-  state: "opened"
-```
-
-If an MR already exists, show it to the developer and ask whether to update it or abort.
-
-**If GitLab MCP is unavailable:** use `glab` (see the `gitlab-mr` skill from your skills list):
-
-```bash
-glab mr list --source-branch "{branch-name}"
-```
-
-If `glab` is not installed or not authenticated, skip this check and mention that the developer can run `glab mr list` after `glab auth login`.
 
 ## Phase 3: Fetch JIRA Context (optional)
 
@@ -198,9 +185,9 @@ Each commit must be:
 - **Buildable**: Code compiles/runs after this commit
 - **Logical**: Changes belong together conceptually
 
-### Step 4.3: Prepare and Present Commit Plan
+### Step 4.3: Plan Commits Internally
 
-For each proposed commit, determine:
+For each commit, determine:
 
 | Attribute | Description |
 |-----------|-------------|
@@ -211,34 +198,7 @@ For each proposed commit, determine:
 | **Files** | List of files to include in this commit |
 | **Order** | Sequence matters — dependencies before dependents |
 
-Present the plan to the developer in this format:
-
-```
-## Proposed Commits
-
-### Commit 1 of N
-**Message:** `type(scope): description`
-**Files:**
-- path/to/file1
-- path/to/file2
-
-**Rationale:** Why these files belong together
-
-**Commands:**
-git add path/to/file1 path/to/file2
-git commit -m "type(scope): description"
-
----
-
-(repeat for all commits)
-
-## Summary
-- Total commits: N
-- Types: X feat, Y fix, Z chore
-- Breaking changes: Yes/No
-
-Ready to proceed? (yes/no/adjust)
-```
+Do **not** present a commit plan and wait for "yes/no/adjust". Plan silently, then execute in Step 4.4.
 
 For multi-line commit messages, use heredoc syntax:
 
@@ -253,7 +213,7 @@ EOF
 )"
 ```
 
-**Adjustment protocol** — if the developer wants changes:
+**Later adjustment** — only if the developer asks after commits exist:
 
 - **"merge 2 and 3"** — combine commits
 - **"split commit 2"** — break into smaller commits
@@ -261,11 +221,9 @@ EOF
 - **"add file X to commit 2"** — reassign files
 - **"reorder: 2, 1, 3"** — change commit sequence
 
-Revise the plan and re-present until the developer approves.
+### Step 4.4: Execute Commits Immediately
 
-### Step 4.4: Execute Commits (after approval)
-
-For each commit in the approved plan, in order:
+For each planned commit, in order:
 
 1. **Stage specific files:**
    ```bash
@@ -282,7 +240,7 @@ For each commit in the approved plan, in order:
    git log -1 --stat
    ```
 
-4. **Report progress:**
+4. **Report progress (post-fact, not a gate):**
    ```
    Commit 1/N created: feat(auth): add user authentication service
    Commit 2/N created: feat(api): add login and logout endpoints
@@ -294,10 +252,10 @@ For each commit in the approved plan, in order:
 After all commits are created (or if the working tree was already clean), verify the branch has diverged from the target:
 
 ```bash
-git log dev..HEAD --oneline
+git log {target-branch}..HEAD --oneline
 ```
 
-If there are zero commits ahead of `dev`, warn the developer: "No commits to include in the MR. Aborting." and stop.
+If there are zero commits ahead of the target, warn the developer: "No commits to include in the MR. Aborting." and stop.
 
 ### Commit Message Reference
 
@@ -319,35 +277,15 @@ If there are zero commits ahead of `dev`, warn the developer: "No commits to inc
 - **Body**: Explain motivation and context, wrap at 72 characters
 - **Breaking changes**: Add `!` after type/scope (`feat(api)!: change response format`) or footer (`BREAKING CHANGE: description`)
 
-## Phase 5: Preview and Push (approval gate)
+## Phase 5: Push
 
-Build and display a full preview for the developer:
-
-```
-## MR Preview
-
-**Branch:** {source-branch} -> {target-branch}
-
-**Commits:**
-{output of git log dev..HEAD --oneline}
-
-**MR Title:** {draft title}
-
-**MR Description:**
-{draft description — see MR Description Template below}
-
----
-
-Ready to push and create MR? (yes / adjust / abort)
-```
-
-- **Do NOT push until the developer approves.**
-- If the developer says "adjust", ask what to change and update the preview.
-- On approval:
+Build MR title and description internally (see templates below), then **push immediately** — do not wait for preview approval.
 
 ```bash
 git push -u origin HEAD
 ```
+
+Report branch and draft title briefly after push (informational only).
 
 ## Phase 6: Create MR
 
@@ -356,6 +294,8 @@ Use this order:
 1. **GitLab MCP** (when available and working) — see the `gitlab-mr` skill → `references/mcp.md`
 2. **`glab` CLI** (when MCP is unavailable or fails) — see the `gitlab-mr` skill from your skills list
 3. **Manual** — copy title and description into the GitLab UI
+
+If an open MR already exists for the source branch (Phase 2), do not create a duplicate — push updates and report the existing URL (update description via GitLab tools only when needed).
 
 ### Resolve project ID
 
@@ -367,7 +307,7 @@ glab api "projects?search=${REPO_NAME}&membership=true" \
   | python3 -c "import json,sys; p=json.load(sys.stdin); [print(x['id'], x['path_with_namespace']) for x in p]"
 ```
 
-Present matches, ask the developer to confirm, and persist the numeric ID to `.umo/jira-tracker.json` `gitlab.projectId`.
+If multiple matches, pick the one matching the remote path; if still ambiguous, ask once. Persist the numeric ID to `.umo/jira-tracker.json` `gitlab.projectId`.
 
 ### With GitLab MCP
 
@@ -457,10 +397,10 @@ If the developer declines the JIRA update entirely, skip it.
 {From JIRA ticket context or developer input}
 
 ## Changes Made
-{Bullet list generated from git log dev..HEAD --oneline}
+{Bullet list generated from git log {target-branch}..HEAD --oneline}
 
 ## How to Test
-{From JIRA acceptance criteria / bead Refined AC if available, otherwise ask developer or leave placeholder}
+{From JIRA acceptance criteria / bead Refined AC if available, otherwise leave placeholder}
 
 ## Checklist
 - [ ] Added tests
@@ -490,7 +430,7 @@ Format: `{type}/{JIRA-KEY}-{short-description}` (or `{type}/{short-description}`
 Derive the type from the JIRA issue type when available:
 - Story / Feature -> `feat/`
 - Bug -> `fix/`
-- Task / Sub-task -> `feat/` (or ask developer)
+- Task / Sub-task -> `feat/`
 - Epic -> `feat/`
 
 ## Example Invocations
@@ -501,15 +441,15 @@ Derive the type from the JIRA issue type when available:
 /umo-jira-tracker:mr in current branch using JIRA ticket CWN-1234
 ```
 
-Parsed: branch strategy = current, JIRA key = CWN-1234, target = dev.
+Parsed: branch strategy = current (explicit), JIRA key = CWN-1234, target = dev. Commits/push/MR run immediately.
 
-**Interactive — no input:**
+**No input — auto branch heuristic:**
 
 ```
 /umo-jira-tracker:mr
 ```
 
-Agent asks: branch strategy? JIRA key? target branch? Then proceeds through all phases.
+On target/protected → create new branch automatically. On a feature branch with no open MR → reuse it. On a feature branch with an open MR → reuse and update. Uses bead JIRA key when present. No branch-strategy quiz.
 
 **New branch with JIRA ticket:**
 
@@ -517,7 +457,7 @@ Agent asks: branch strategy? JIRA key? target branch? Then proceeds through all 
 /umo-jira-tracker:mr create new branch for CWN-5678
 ```
 
-Parsed: branch strategy = new, JIRA key = CWN-5678, target = dev. Agent fetches JIRA summary to derive branch name.
+Parsed: branch strategy = new (explicit), JIRA key = CWN-5678, target = dev. Agent fetches JIRA summary to derive branch name and proceeds immediately.
 
 **No JIRA, current branch:**
 
@@ -525,4 +465,4 @@ Parsed: branch strategy = new, JIRA key = CWN-5678, target = dev. Agent fetches 
 /umo-jira-tracker:mr push current branch and create MR
 ```
 
-Parsed: branch strategy = current, no JIRA, target = dev. MR description built from commits only.
+Parsed: branch strategy = current (explicit), no JIRA, target = dev. MR description built from commits only; push and create immediately.

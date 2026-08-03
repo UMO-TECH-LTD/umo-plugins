@@ -6,8 +6,8 @@ description: Lower-level reference skill for creating GitLab merge requests. Cov
 # GitLab Merge Requests via glab (preferred), GitLab MCP fallback
 
 > **Do not call this skill directly to create an MR.**
-> MR creation must always go through the `/mr` command flow (`commands/mr.md`), which handles branch setup, commit planning, full preview, and optional JIRA sync.
-> This skill is invoked **only** from Phase 6 of that command — as the primary glab-based path, or as the reference for the GitLab MCP fallback call. Using it outside of that flow can produce MRs with the wrong title format or missing approval.
+> MR creation must always go through the `/mr` command flow (`commands/mr.md`), which handles branch setup, commit planning, push, create, and optional JIRA sync.
+> This skill is invoked **only** from Phase 6 of that command — as the primary glab-based path, or as the reference for the GitLab MCP fallback call. Using it outside of that flow can produce MRs with the wrong title format or incomplete branch/commit handling.
 
 ## Naming & squash rules (UMO defaults, trunk-based development)
 
