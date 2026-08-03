@@ -8,13 +8,16 @@ description: First-run setup wizard — verify tools (bd, glab, Atlassian MCP), 
 
 Configure the `umo-jira-tracker` plugin for the current repository.
 
-Reads the `jira-tracker-setup` skill and follows it to completion. During config collection the wizard asks whether `/sync` should pull **all open assigned tickets** or **active sprint only** (with optional issue-count preview via Atlassian MCP).
+Reads the `jira-tracker-setup` skill and follows it to completion. During config collection the wizard asks for your squad project key and whether `/sync` should pull **all open assigned issues**, **one flow** (everything serving it, across projects), or **one slice** — with an optional issue-count preview via Atlassian MCP.
+
+There is no sprint scope: the Sprint field is unused org-wide.
 
 ## When to run
 
 - First time using the plugin in this repo (`.umo/jira-tracker.json` is absent).
 - After installing a new tool (`glab`, `bd`).
-- When JIRA project, target branch, or MR preferences change.
+- When the squad project, target branch, or MR preferences change.
+- To drop legacy config keys (`jira.defaultSprintId`, `jira.transitionOnMr`, `sync.pushSubtasks`, `sync.pushLabel`) from an older install.
 
 ## Input
 

@@ -1,5 +1,5 @@
 ---
-description: UMO JIRA Tracker — bead conventions, JIRA mutation approval gate, title format, label schema, and naming standard reference. Active when .umo/jira-tracker.json is present in the repo.
+description: UMO JIRA Tracker — the five-issue-type work-tracking model, bead conventions, JIRA mutation approval gate, naming standard, and the merge gate. Active when .umo/jira-tracker.json is present in the repo.
 globs:
   - ".umo/jira-tracker.json"
   - "**/.beads/**"
@@ -7,23 +7,49 @@ globs:
 
 # UMO JIRA Tracker — Orientation
 
-This rule is active because `.umo/jira-tracker.json` is present. It reminds agents of the key conventions.
+This rule is active because `.umo/jira-tracker.json` is present. It reminds agents of the key conventions. The model itself lives in `references/work-tracking-model.md` at the plugin root.
+
+## The work-tracking model
+
+**Five issue types, nothing else:** **Flow** (level 2) → **Slice** (the epic slot) → **Task**, **Bug**, **Request** (level 0).
+
+**Story and Sub-task do not exist.** Dev work is a Task, full stop; private breakdown is checkboxes or beads. If someone asks for either, say the type does not exist rather than substituting something.
+
+**The parent chain is the only structural edge** — no flow or slice field to fill, and none to drift. `Blocks` is the only link type. Cross-project parents are normal: a Request lives in the provider's project and parents to the consumer's Slice.
+
+**Unused fields — never read, never write:** Sprint, story points, original estimate / time tracking, Epic Link. Due date is the `needed-by` on a Request and is meaningless on a Task.
+
+**Terminals:** match on `statusCategory`, never on the literal status name. A Task reaching Done means the PR merged and tests are green; a Request reaching its terminal means **consumer proof**, which only the consumer can declare. **Retired** is the global "withdrawn without being completed" terminal — its Resolution is required by policy (the live transition does not enforce it) and it is excluded from every count.
+
+## What this plugin may do
+
+- **Creates** Tasks and Bugs, under a Slice. Nothing else.
+- **Transitions** Tasks and Bugs. Nothing else.
+- **Pulls** all five types into Beads.
+
+Flows, Slices and Requests are authored and moved by the flow PM and the tech leads, on the board — they carry demo statements, contracts, mock owners and due dates.
+
+## Beads and Jira are not two views of one tree
+
+The execution plan an agent follows *inside* one Task is an engineering artifact that lives in git. It is **not** synced to Jira; no bridge is built. Decompose freely with `bd create --parent`.
+
+Only a **unit of assignment or delivery** — someone works on it for a meaningful stretch, or QA/PM/EM/CTO needs to see its status — becomes a Jira Task under the Slice. And it is a **sibling** of the current Task, never a child.
 
 ## Bead conventions
 
-- **Title format**: `[{JIRA-KEY}] {JIRA summary}` — do not deviate.
+- **Title format**: `[{JIRA-KEY}] {JIRA summary}` — do not deviate, and keep the slice coordinate the summary carries.
 - **Labels**: every synced bead carries `jira:{KEY}`. Look up beads via `bd list --label "jira:{KEY}" --json`.
 - **Description zones**: the description has a JIRA-sourced zone (above `## Notes`) and a user/agent Notes zone (below `## Notes`). Sync only overwrites the JIRA zone; never touch `## Notes` and below.
-- **Parent linkage**: Sub-tasks → Story-epic bead; Task/Bug → Epic-bead; Story → Epic-bead. Use `bd dep add` or `--parent` to express this.
+- **Parent linkage**: Task/Bug/Request beads → Slice-bead; Slice-bead → Flow-bead. Use `bd dep add` or `--parent` to express this.
 
-## Naming standard
+## Naming standard and the merge gate
 
-> Based on the internal Confluence standard **"STD-JIRA and GitLab Branch/MR Naming"**.
-
-- **Branch:** `{type}/{JIRA-KEY}-{short-description}` — types: `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build`; short-description 2–5 words kebab-case. (e.g. `feat/CWN-1234-add-kafka-retry`)
-- **MR title:** `{JIRA-KEY}: {Short description}` — JIRA key at start triggers GitLab auto-linking; conventional type prefix is **not** required in MR titles. (e.g. `CWN-1234: Add Kafka retry`)
-- **Commit:** `type(scope): description` (Conventional Commits) — include JIRA key in footer or branch name.
-- **Forbidden:** branches without a JIRA key, names like `tmp`/`wip`/`test`, direct commits to `main`/`dev`/`release`, MRs without description or JIRA link.
+- **Branch:** `{type}/{JIRA-KEY}-{short-description}` — types: `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build`; short-description 2–5 words kebab-case. (e.g. `feat/PAY-1234-add-kafka-retry`)
+- **MR title:** `{type}(scope): lowercase imperative subject (JIRA-KEY)` — Conventional Commits with the key in parentheses at the **end**, which keeps the title commitlint-safe. (e.g. `feat(publisher): add kafka retry (PAY-1234)`)
+- **Commit:** `type(scope): description` (Conventional Commits).
+- **Jira summary grammar:** `[{SLICE-COORDINATE}] {outcome}` — Task is an imperative verb phrase, Bug is the symptom not the diagnosis. Dash in the coordinate, never slash.
+- **The merge gate:** **no MR merges without a Jira Task, and the merge commit references the task.** The key is CI-enforced in the branch and MR title, and the merged-PR automation reads it to flip the Task to Done. Never create an MR without one.
+- **Forbidden:** branches or MR titles without a JIRA key, names like `tmp`/`wip`/`test`, direct commits to `main`/`dev`/`release`, MRs without a description, and layer names, person names, status words or "part 2 / misc / fixes" in a Jira summary.
 
 ## MR creation rule
 
@@ -34,9 +60,10 @@ If you are mid-task and need to ship code to a branch, follow the phases in `com
 ## JIRA mutation rules
 
 - **Never mutate JIRA without an explicit developer approval gate.** Always preview the comment body, the transition, or the new issue payload before calling any Atlassian MCP write tool.
-- **JIRA Done is one-way**: the sync closes beads when JIRA is Done, but never re-opens a bead that the developer closed locally.
-- **Sub-tasks require a parent — always.** No override exists for this rule.
-- **Orphan issues**: any non-Epic creation without a parent requires the exact phrase `create unlinked` plus a justification. Epics require `create epic`.
+- **Terminal states are one-way locally**: the sync closes a bead when its JIRA issue reaches Done, Closed or Retired, but never re-opens a bead that the developer closed locally.
+- **Never transition on MR creation.** Task Done is the merged-PR automation's call.
+- **Every created issue needs a Slice parent.** Creating one without a parent requires the exact phrase `create unlinked` plus a justification, and trips the org's orphan detector. Suggest the squad's `[TH-<KEY>-S0]` tech-health slice first.
+- **Never set Retired to get an issue out of the way.** It means withdrawn without being completed, it needs a Resolution, and retiring a Slice cascades — which is why this plugin retires Tasks and Bugs only.
 
 ## Available commands
 
@@ -45,7 +72,7 @@ If you are mid-task and need to ship code to a branch, follow the phases in `com
 | `/umo-jira-tracker:setup` | First-run wizard |
 | `/umo-jira-tracker:sync` | JIRA → Beads sync |
 | `/umo-jira-tracker:work [KEY]` | Claim + discuss |
-| `/umo-jira-tracker:create [type]` | Create JIRA issue (linked) |
+| `/umo-jira-tracker:create task\|bug` | Create a JIRA Task or Bug under a Slice |
 | `/umo-jira-tracker:commit` | Conventional commits |
 | `/umo-jira-tracker:mr` | Create MR + sync JIRA |
 | `/umo-jira-tracker:close` | Close bead + JIRA Done |

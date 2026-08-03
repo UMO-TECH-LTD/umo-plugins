@@ -1,6 +1,6 @@
 ---
 name: jira-sync-back
-description: Single owner of all JIRA mutations — comments, transitions, description edits, and issue creation. Always previews the payload and waits for developer approval. Used by /mr, /close, /create, /work (resume from Code Review), and inline sub-task prompts in /work. Enforces the creation-policy linkage matrix.
+description: Single owner of all JIRA mutations — comments, transitions, description edits, and issue creation. Always previews the payload and waits for developer approval. Used by /mr, /close, /create and /work. Creates Tasks and Bugs under a Slice only, and transitions Tasks and Bugs only; refuses Story, Sub-task, Epic, Slice, Flow and Request. Enforces the creation policy.
 paths:
   - ".umo/jira-tracker.json"
 ---
@@ -9,8 +9,11 @@ paths:
 
 This skill is the **single chokepoint** for every mutation sent back to JIRA. Nothing is written to JIRA without showing the developer a preview and receiving explicit approval.
 
+Load `../../references/work-tracking-model.md` for the org's encoding — five issue types, the parent chain as the only structural edge, and the fields that are deliberately unused.
 Load `references/creation-policy.md` when any issue creation is requested.
-Load `references/transitions.md` for any status transition — use cached IDs to avoid a live `getTransitionsForJiraIssue` call when the project is known.
+Load `references/transitions.md` for any status transition.
+
+**The blast radius of this skill is narrow on purpose.** It creates **Tasks and Bugs under a Slice**, and it transitions **Tasks and Bugs**. Flows, Slices and Requests are authored and moved by the flow PM and the tech leads, on the board — they carry demo statements, contracts, mock owners and due dates that a coding agent is not positioned to author. Refuse them with the reason.
 
 ## Shared prerequisites
 
@@ -62,17 +65,31 @@ Before posting, check existing comments via `getJiraIssue` and scan for a commen
 
 ## Operation B — Transition JIRA issue
 
-Used by: `/close` (→ `transitionOnClose`), optional post-create transition in `/create`.
+Used by: `/close` (→ `transitionOnClose`).
 
 > **Not used by `/mr`.** MR creation never transitions JIRA status.
 
-### Resolve transition ID
+### Guardrails — what may be transitioned
 
-**Step 1 — Check cache first.** Load `references/transitions.md` and look up the project key and configured transition name (e.g. `"In Review"` or `"Done"`). Use the cached transition ID if found — skip the live API call.
+| Type | Transitionable from here? |
+|---|---|
+| **Task**, **Bug** | yes |
+| **Slice** | no — the Draft→Ready and Ready→In Progress gates are validated on the board |
+| **Flow** | no — status is derived from its children by roll-up automation |
+| **Request** | no — Accept is the provider TL's act, Closed is the consumer's proof, Retired is consumer-owned |
 
-**Step 2 — Partial name match.** If the configured name does not exactly match a cached entry, try case-insensitive partial matching (e.g. `"in review"` → `"To Review"` for CWN). Always confirm the match with the developer before executing.
+Resolve the issue's type before anything else and refuse the other three with the reason, not just a "no".
 
-**Step 3 — Live fallback.** Only call `getTransitionsForJiraIssue` when the project is not in `references/transitions.md` or when a previously cached ID returns an error:
+Two more rules from `references/transitions.md`:
+
+- **Terminal vocabulary is not interchangeable.** Task and Bug end in **Done**. Only a Request ends in **Closed**, and this plugin does not transition Requests.
+- **Retired is not a synonym for Done.** It means withdrawn without being completed, it is excluded from every count, and its Resolution is mandatory. Never reach for it to get an issue out of the way.
+
+### Resolve the transition
+
+Load `references/transitions.md` for the workflow tables, then check that the requested move is an edge in the issue type's workflow. If it is not, stop and explain — do not go looking for a path.
+
+Transition IDs are **not** cached: they are per-project configuration that drifts silently, and a stale ID makes a confident wrong move. Always resolve live:
 
 ```
 CallMcpTool -> Atlassian / getTransitionsForJiraIssue
@@ -80,9 +97,9 @@ CallMcpTool -> Atlassian / getTransitionsForJiraIssue
   issueIdOrKey: "{KEY}"
 ```
 
-After a successful live lookup, note the new transition IDs in your response so a developer or agent can update `references/transitions.md`.
+Match on the **target status name**, case-insensitively. If the match is ambiguous or absent, list what Jira actually offers and ask the developer to pick — never guess, and never fuzzy-match across terminals.
 
-If no match is found even after live lookup, list available transitions and ask the developer to pick one.
+If the transition requires a screen (Retired always does), include the required fields — for Retired that means a Resolution of `Won't Do`, `Duplicate`, `Superseded` or `Cannot Reproduce`, chosen by the developer.
 
 ### Preview
 
@@ -105,17 +122,15 @@ CallMcpTool -> Atlassian / transitionJiraIssue
 
 ## Operation B-multi — Multi-step transition
 
-Used by: `/work` when resuming a ticket that has no direct path to **In Progress** (e.g. CWN **Code Review**).
+Used by: `/work` when resuming a Task or Bug that has no direct edge to **In Progress**.
 
-Load `references/transitions.md` → **Multi-step workarounds** section. Match project key + current status + target status.
+The same guardrails as Operation B apply: Tasks and Bugs only.
 
-### Known sequences
+### Build the step plan live
 
-| Project | From status | To status | Steps |
-|---------|-------------|-----------|-------|
-| CWN | Code Review | In Progress | 1. Move To Do (id **9**) → To do<br>2. Start progress (id **11**) → In Progress |
+There is no cached list of sequences. Call `getTransitionsForJiraIssue`, see what the current status actually offers, and build the shortest path to the target status. If the only available first hop is a move back toward `To Do`, that is normally the intermediate step.
 
-If the issue is already at an intermediate status after step 1 (e.g. **To do**), skip completed steps and continue from the next cached transition.
+If no path can be built from what Jira offers, stop and show the developer the available transitions rather than inventing one.
 
 ### Preview
 
@@ -132,7 +147,7 @@ Proceed? (yes/no)
 
 ### Execute (on yes)
 
-Run each `transitionJiraIssue` call **in order**. After each step, optionally re-fetch the issue (`getJiraIssue`) to confirm the status before the next step — required if a step fails or the workflow differs from cache.
+Run each `transitionJiraIssue` call **in order**, re-fetching the issue (`getJiraIssue`) between steps to confirm it landed where the plan expected before continuing.
 
 ```
 CallMcpTool -> Atlassian / transitionJiraIssue
@@ -149,8 +164,6 @@ CallMcpTool -> Atlassian / transitionJiraIssue
 ```
 
 If any step fails, stop and report which step succeeded and which failed. Do not claim the bead until the developer confirms how to proceed.
-
-If the project/status is not in the cache, fall back to `getTransitionsForJiraIssue`, build a step plan with the developer, and suggest updating `references/transitions.md`.
 
 ---
 
@@ -219,29 +232,37 @@ If a delivery section already exists (scan the existing description for `## MR D
 
 ## Operation D — Create JIRA issue
 
-Used by: `/create`, inline sub-task creation from `/work`.
+Used by: `/create`, and by `/push` when promoting a bead that has become a unit of delivery.
 
 **Always** load `references/creation-policy.md` before executing this operation.
 
+### Enforce the type
+
+Only **Task** and **Bug** are creatable. Refuse everything else before doing any other work — `creation-policy.md` carries the exact messages:
+
+- **Story**, **Sub-task** — the types do not exist in this org. No override.
+- **Epic**, **Slice**, **Flow**, **Request** — authored by the flow PM or the requesting PM/TL. No override.
+
 ### Enforce linkage
 
-Resolve parent following the matrix in `references/creation-policy.md`:
+Resolve the parent following `references/creation-policy.md`:
 
 1. `--parent <KEY>` flag.
-2. Currently claimed bead's `jira:` label (if invoked from `/work`).
-3. `--under <bead-id>` → read its `jira:` label.
-4. None → trigger **orphan warning** (see creation-policy.md).
+2. The claimed bead's **Slice** (if invoked from `/work`) — the claimed bead's parent, not the bead itself.
+3. `--under <bead-id>` → read its `jira:` label, then resolve to its Slice.
+4. None → trigger the **orphan warning**.
 
-If the issue type is Sub-task and no parent is resolved: **hard block** — never create unlinked Sub-tasks even with `create unlinked`.
+Then **fetch the parent and verify it is a Slice**. If it is a Task, Bug or Request, offer its Slice instead — a level-0 issue cannot own another. If it is a Flow, ask which of its Slices. A parent in a different project is legitimate and must not be "corrected".
 
 ### Preview
 
 ```
 About to create {type} in project {PROJECT}:
 
-  Summary:  {summary}
-  Type:     {issuetype}
-  Parent:   {PARENT-KEY}: {parent summary}  (or "NONE — unlinked")
+  Summary:  [{SLICE-COORDINATE}] {outcome}
+  Type:     {Task|Bug}
+  Slice:    {PARENT-KEY}: {parent summary}  (or "NONE — unlinked")
+  Flow:     {FLOW-KEY}: {flow summary}
   Priority: {priority}
   Assignee: {user.jiraAccountId display name}  (from config)
 
@@ -250,6 +271,8 @@ About to create {type} in project {PROJECT}:
 
 Create issue? (yes/no)
 ```
+
+If the developer's title does not follow the type's grammar — imperative verb phrase for a Task, symptom rather than diagnosis for a Bug — show the proposed rewrite next to the original.
 
 ### Execute (on yes)
 
@@ -269,38 +292,20 @@ CallMcpTool -> Atlassian / createJiraIssue
   }
 ```
 
-On success, receive the new issue key (e.g. `CWN-5678`).
+On success, receive the new issue key (e.g. `PAY-5678`).
 
-### Sprint assignment (create-then-edit pattern)
+### Fields that must never appear in the payload
 
-`customfield_10020` (sprint) is **silently ignored** by the Jira REST API when included in the `createJiraIssue` payload — it must be set in a separate edit call immediately after creation.
+| Field | Why |
+|---|---|
+| Sprint (`customfield_10020`) | unused org-wide — heartbeats do not open and close containers, and tasks stay open until merge-ready |
+| Story points | unused org-wide — velocity is measured from consistently-sized counts, not estimated |
+| Original estimate / time tracking | cost is time-in-status, measured not estimated |
+| **Due date** | meaningless on a Task. It is the `needed-by` on a Request and nothing else |
+| Epic Link (`customfield_10014`) | superseded by the native `fields.parent` |
+| Labels | the encoding carries no label taxonomy — the parent chain does the work |
 
-**Resolve sprint ID (in order):**
-
-1. **Parent sprint** — if a parent key was provided, fetch it and read `customfield_10020[0].id`:
-   ```
-   CallMcpTool -> Atlassian / getJiraIssue
-     cloudId: "{cloudId}"
-     issueIdOrKey: "{PARENT-KEY}"
-   ```
-   Extract `fields.customfield_10020[0].id` from the response.
-2. **Config default** — if `jira.defaultSprintId` exists in `.umo/jira-tracker.json`, use that value.
-3. **Skip** — if neither source has a sprint ID, omit the edit call. The issue will appear in the backlog and can be moved to a sprint manually on the board.
-
-**If a sprint ID was resolved**, call immediately after creation (no extra preview needed — this is a housekeeping step):
-
-```
-CallMcpTool -> Atlassian / editJiraIssue
-  cloudId: "{cloudId}"
-  issueIdOrKey: "{NEW-KEY}"
-  fields: {
-    "customfield_10020": { "id": {sprintId} }
-  }
-```
-
-Report the outcome:
-- Success: `Sprint assigned: {sprint name} (id: {sprintId})`
-- Error (e.g. sprint closed): surface the error and instruct the developer to assign the sprint manually on the board.
+If a developer asks for one of these, say it is not part of the org's encoding rather than setting it quietly. See `../../references/work-tracking-model.md` §2.
 
 ### Round-trip to Beads
 
@@ -316,7 +321,7 @@ After successful creation, immediately upsert the new issue into beads using the
 
 ### `/mr` complete flow
 
-> **Important: never trigger a JIRA status transition on MR creation.** A developer may open multiple MRs for a single ticket (partial delivery, follow-up fixes, etc.). Transitioning the ticket status is the sole responsibility of `/close`.
+> **Important: never trigger a JIRA status transition on MR creation.** Two reasons, and both stand on their own. A developer may open several MRs for one ticket, so an MR is not evidence of completion. And **Task Done is the merged-PR automation's call** — it fires on merge, keyed off the Jira key in the branch and MR title. Transitioning from here would race it and claim a state this plugin has not verified.
 
 1. Operation A: comment `MR created: {MR_URL}\n\n### Changes\n{bullet-list}` — ask approval.
 2. Operation C: append (or extend) the MR delivery section in the JIRA description — ask approval.
@@ -329,21 +334,23 @@ Both previews shown together before any action. Developer can approve both, appr
 2. Operation A: comment `Work completed. MR: {MR_URL}\n\n{summary}` — ask approval.
 3. Operation B: transition to `jira.transitionOnClose` — ask approval.
 
+Step 3 is usually a no-op worth checking first: if the MR is already merged, the org automation has flipped the Task to Done. Fetch the issue, and when it is already terminal, report that instead of transitioning.
+
 ### `/create` complete flow
 
-1. Collect summary, type, priority, parent from developer input.
-2. Enforce linkage matrix (Operation D prefix).
+1. Collect summary, type, priority and parent from developer input.
+2. Refuse any type other than Task and Bug; resolve and verify the parent Slice (Operation D prefix).
 3. Preview + create (Operation D).
 4. Round-trip to Beads.
 5. Optionally transition to `In Progress` if the developer is starting work immediately (ask).
 
-### `/work` resume flow (Code Review → In Progress)
+### `/work` resume flow
 
-When `/work` loads a ticket whose JIRA status is **Code Review** (CWN) or another status with a documented multi-step path to **In Progress**:
+When `/work` loads a Task or Bug that is not in a startable state:
 
 1. Present context (via `jira-bead-bridge` Step 2).
-2. Offer: *"This ticket is in Code Review. Transition to In Progress before claiming?"* — default **yes** when the developer said they want to resume work.
-3. On yes: Operation B-multi (CWN: Move To Do → Start progress).
-4. Claim bead and continue the discuss loop.
+2. Offer: *"{KEY} is currently '{status}'. Move it to In Progress before claiming?"*
+3. On yes: Operation B, or Operation B-multi when no direct edge exists — with the path resolved live.
+4. Claim the bead and continue the discuss loop.
 
-Do **not** transition silently — always show the multi-step preview and wait for approval.
+Do **not** transition silently — always show the preview, covering every step at once, and wait for approval. If the issue is a Slice, Flow or Request, do not offer a transition at all.

@@ -1,6 +1,6 @@
 ---
 name: jira-push
-description: Reverse-direction sync — push locally-created beads (no `jira:` label) up to JIRA as Epics / Stories / Tasks / Bugs (and optionally Sub-tasks). Always previews, walks parents first, delegates the actual `createJiraIssue` call to `jira-sync-back` Operation D so the existing approval, orphan-warning, and sprint create-then-edit logic is reused. Invoked by `/umo-jira-tracker:sync` Phase B.
+description: Reverse-direction sync — promote locally-created beads (no `jira:` label) into JIRA as Tasks or Bugs under a Slice. Never creates Flows, Slices or Requests, and never mirrors an execution plan. Always previews, resolves the parent Slice first, and delegates the actual `createJiraIssue` call to `jira-sync-back` Operation D so the existing approval and orphan-warning logic is reused. Invoked by `/umo-jira-tracker:sync` Phase B.
 paths:
   - ".umo/jira-tracker.json"
   - "**/.beads/**"
@@ -8,10 +8,21 @@ paths:
 
 # JIRA Push
 
-This skill turns Beads into the source of truth. Any bead that was created locally with `bd create` (or imported from somewhere other than JIRA) and therefore has **no `jira:` label** is a candidate for promotion into JIRA.
+Promotes a bead that has become a **unit of assignment or delivery** into the JIRA Task or Bug it should be. A bead created locally with `bd create` and therefore carrying **no `jira:` label** is a candidate.
 
-Load `references/bead-type-mapping.md` for the bead → JIRA issue-type matrix.
-Load `../jira-sync-back/references/creation-policy.md` for the orphan / Sub-task rules — every push goes through the same chokepoint.
+Load `../../references/work-tracking-model.md` for the org's encoding.
+Load `references/bead-type-mapping.md` for the classification rules.
+Load `../jira-sync-back/references/creation-policy.md` for the orphan and refusal rules — every push goes through the same chokepoint.
+
+## What this skill is not
+
+It is **not** a mirror. Beads and JIRA are not two views of one tree, and the 01.08 ruling is explicit about the line between them:
+
+> the step-by-step execution plan an agent follows *inside* one task is an engineering artifact and lives in git (beads or otherwise). It is **not** synced to Jira; no bridge is built.
+
+So most beads are correctly never pushed, and a run that promotes nothing is a normal outcome rather than a failure. Push creates **Tasks and Bugs, under a Slice**. Flows, Slices and Requests are authored on the board by the flow PM and the tech leads.
+
+You rarely need to reach for this at all: the merge gate settles the common case, because no MR merges without a Jira Task.
 
 ## Prerequisites
 
@@ -31,8 +42,6 @@ From `.umo/jira-tracker.json`:
 ```json
 "sync": {
   "direction": "both",
-  "pushSubtasks": false,
-  "pushLabel": "jira-push",
   "skipLabel": "jira-skip"
 }
 ```
@@ -40,9 +49,9 @@ From `.umo/jira-tracker.json`:
 | Key | Meaning |
 |-----|---------|
 | `sync.direction` | `both` (default) / `pull` / `push` — controls which phases of `/sync` run |
-| `sync.pushSubtasks` | When `false` (default), beads that map to JIRA Sub-tasks are skipped unless they carry the `pushLabel`. When `true`, sub-tasks are pushed unconditionally |
-| `sync.pushLabel` | Bead label that forces inclusion even if normally skipped (default `jira-push`) |
 | `sync.skipLabel` | Bead label that forces exclusion regardless of other rules (default `jira-skip`) |
+
+There is no `pushSubtasks` or `pushLabel`. Sub-tasks do not exist, and the classifier already declines anything that is not a unit of delivery — an opt-in label would just be a way to override that rule.
 
 ## Algorithm
 
@@ -70,41 +79,48 @@ bd list --json | jq '[.[] | select((.labels // []) | any(startswith("jira:")) | 
 Filter the union to:
 
 - `status != closed` (closed beads are handled by Phase C drift, not push).
-- `type in ("epic", "task")` — Beads ships with these types only for our mapping. Other custom types (`chore`, `bug`, `feature`, `decision`) map to JIRA Bug / Task / Story per the mapping table.
 - No `{sync.skipLabel}` label.
-- Either no `{sync.pushLabel}` label and not classified as Sub-task, **or** carries `{sync.pushLabel}` (Sub-task opt-in).
+
+Do not pre-filter by bead type — `epic` beads are classified and refused with an explanation, which is more useful than silence.
 
 ### Phase 2 — Classify each candidate
 
-For each candidate bead, walk its parent chain via `bd show {id} --json` (read `parent_id`, `dependencies`, and any existing `jira:` / `jira-type:` labels on the parent) and resolve the proposed JIRA issue type from `references/bead-type-mapping.md`.
+For each candidate bead, walk its parent chain via `bd show {id} --json` (read `parent_id`, `dependencies`, and any existing `jira:` / `jira-type:` labels on the parent) and apply the classification rules in `references/bead-type-mapping.md`.
 
-Inputs to the mapping:
+Inputs to the classification:
 
 | Signal | Source |
 |--------|--------|
 | `bead.type` | `bd show ... --json` field `type` |
 | `parent bead exists` | `bd show ... --json` field `parent_id` (preferred) or first `parent-of` dependency |
-| `parent.jira-type` | Parent bead label `jira-type:*` (when parent is already in JIRA) |
+| `parent.jira-type` | Parent bead label `jira-type:*` — the decisive signal: only `slice` is a valid parent |
 | `parent.jira-key` | Parent bead label `jira:*` |
-| `parent.bead.type` | Parent's `type` field (when parent is not yet in JIRA) |
+| `parent.jira-flow` | Parent bead label `jira-flow:*` — shown in the dry-run so the developer sees which flow pays |
 
 Output for each candidate:
 
 ```
 {
   beadId, beadTitle, beadType,
-  parentBeadId, parentJiraKey,
-  proposedJiraType,    // Epic | Story | Task | Bug | Sub-task
-  action,              // create | create-parent-first | skip-subtask | skip-orphan
+  parentBeadId, parentJiraKey, sliceKey, flowKey,
+  proposedJiraType,    // Task | Bug | none
+  proposedSummary,     // rewritten to the naming grammar if needed
+  action,              // create | refuse-container | refuse-nesting | orphan | skip
   reason               // human-readable
 }
 ```
 
-### Phase 3 — Topological sort
+The three non-create outcomes each carry a specific message in `references/bead-type-mapping.md`; use them verbatim rather than a generic "cannot push":
 
-A bead cannot push until its parent exists in JIRA. Build a DAG over the candidates and sort topologically (Kahn). If a parent bead has no `jira:` label and is itself a candidate, mark it as a dependency and ensure it is processed first.
+- **refuse-container** — the bead is an `epic`. Slices and Flows are the flow PM's to author.
+- **refuse-nesting** — the parent is a Task, Bug or Request. That would be a Sub-task. Offer to leave it in Beads, or to push it as a **sibling** under the same Slice.
+- **orphan** — no parent resolves. Suggest the squad's `[TH-<KEY>-S0]` slice before falling back to `create unlinked`.
 
-If a parent bead is **not** a candidate (e.g. skipped, closed, or marked `jira-skip`) and has no `jira:` label, the child must be flagged `skip-orphan` — there is no key to point to. Surface this in the dry-run so the developer can decide.
+### Phase 3 — Order the work
+
+There is no parent-first topological pass to run: this skill never creates the parent, because the only valid parent is a Slice and Slices are not pushed. A candidate either resolves to an existing Slice key or it does not.
+
+Sort candidates by Slice so the dry-run groups them, then by bead ID for stability.
 
 ### Phase 4 — Dry-run table
 
@@ -113,33 +129,41 @@ Always show the table, even when `--dry-run` is not passed. This mirrors the pul
 ```
 Push candidates:
 
-| Bead | Type | Title | Parent | Proposed JIRA | Action |
-|------|------|-------|--------|---------------|--------|
-| bd-42 | epic | Add Kafka retry | none | Epic | create |
-| bd-43 | task | Implement producer wrapper | bd-42 | Task | create (after bd-42) |
-| bd-44 | task | Write unit tests | bd-43 | Sub-task | skip (sub-task — add `jira-push` label to push) |
-| bd-50 | task | Standalone investigation | none | Task | create (orphan — extra approval) |
+| Bead  | Type | Title                      | Slice    | Proposed | Action |
+|-------|------|----------------------------|----------|----------|--------|
+| bd-43 | task | Implement producer wrapper | PAY-1200 | Task     | create |
+| bd-44 | task | Write unit tests           | —        | —        | refuse-nesting (parent bd-43 is a Task) |
+| bd-42 | epic | Phase-2 rollout            | —        | —        | refuse-container |
+| bd-50 | task | Standalone investigation   | —        | Task     | orphan (needs `create unlinked`) |
 
-Summary: 2 create, 1 orphan-pending, 1 sub-task-skipped.
+Summary: 1 create, 1 orphan-pending, 2 refused.
 
 Proceed with push? (yes/no/select)
 ```
 
 `select` lets the developer cherry-pick rows by ID before continuing.
 
+When a candidate's title does not follow the naming grammar, show the proposed summary next to the original so the rewrite is visible before it is committed.
+
+**Zero candidates is a normal result, not an error.** Report it plainly:
+
+```
+Push: 0 candidates. Every open bead is either already in JIRA, a step inside an
+existing Task, or a local planning container.
+```
+
 If `--dry-run` was passed, stop here and exit.
 
 ### Phase 5 — Per-bead push
 
-For each row marked `create` (in topological order), delegate to `jira-sync-back` Operation D. The skill is already responsible for:
+For each row marked `create`, delegate to `jira-sync-back` Operation D. That skill is already responsible for:
 
-1. Loading `creation-policy.md` and enforcing the linkage matrix.
-2. Showing the per-issue preview (summary, type, parent, priority, assignee from `user.jiraAccountId`, description excerpt).
-3. Calling `createJiraIssue`.
-4. Sprint create-then-edit pattern via `customfield_10020`.
-5. Round-tripping the new key into Beads (labels + JIRA-sourced description zone).
+1. Loading `creation-policy.md`, refusing any type other than Task and Bug, and verifying the parent is a Slice.
+2. Showing the per-issue preview (summary, type, Slice, Flow, priority, assignee from `user.jiraAccountId`, description excerpt).
+3. Calling `createJiraIssue` — with no sprint, story points, estimate, due date, Epic Link or label in the payload.
+4. Round-tripping the new key into Beads (labels + JIRA-sourced description zone).
 
-This skill is responsible for **building the description and selecting the parent key** before handing off:
+This skill is responsible for **building the description and selecting the Slice key** before handing off:
 
 #### Building the description
 
@@ -158,9 +182,11 @@ After Op D's round-trip step, the bead's local description is regenerated by `ji
 
 - **Key**: {NEW-KEY}
 - **URL**: {cloudUrl}/browse/{NEW-KEY}
-- **Type**: {jiraType}
-- **Status**: {newly-created status}
+- **Type**: {Task|Bug}
+- **Status**: To Do
 - **Priority**: {priority}
+- **Slice**: {SLICE-KEY} — {slice summary}
+- **Flow**: {FLOW-KEY} — {flow summary}
 
 ### Acceptance Criteria
 
@@ -171,15 +197,18 @@ After Op D's round-trip step, the bead's local description is regenerated by `ji
 {any pre-existing notes from the bead, preserved}
 ```
 
-#### Selecting the parent key
+#### Selecting the Slice key
+
+The only valid parent is a Slice. Resolve it as:
 
 | Case | Parent key passed to Op D |
 |------|---------------------------|
-| Bead has parent bead with `jira:{KEY}` label | `{KEY}` |
-| Bead has parent bead that was just pushed in this run | the freshly minted key from Op D's return value |
-| Bead has parent bead but parent is skipped/orphan | none — trigger orphan warning (Op D handles this) |
-| Bead has no parent and is an Epic | none — Epic creation prompt (Op D requires `create epic`) |
-| Bead has no parent and is Story / Task / Bug | none — orphan warning (Op D requires `create unlinked` + justification) |
+| Parent bead carries `jira-type:slice` | its `jira:{KEY}` |
+| Parent bead carries `jira-type:task` / `bug` / `request` | the **Slice above it** — after the developer chose `sibling` at the refuse-nesting prompt |
+| Parent bead has no `jira:` label | none — orphan warning (Op D requires `create unlinked` + justification), after suggesting the squad's `[TH-<KEY>-S0]` slice |
+| No parent bead at all | none — same orphan path |
+
+A Slice in a different project is legitimate: the flow that caused the work pays for it.
 
 #### After Op D returns
 
@@ -200,7 +229,8 @@ Push complete:
 |--------|-------|
 | created | 3 |
 | orphan-skipped | 1 |
-| subtask-skipped | 1 |
+| refused (container) | 1 |
+| refused (nesting) | 2 |
 | failed  | 0 |
 
 Failures (if any):
@@ -209,11 +239,13 @@ Failures (if any):
 Next: locally-closed beads will be reconciled with JIRA next.
 ```
 
+Refused rows are not failures — they are beads that correctly stay in git.
+
 ## Error handling
 
-- **Op D refuses creation** (developer cancels at preview, or orphan/`create epic` not approved): record as `skipped` and continue with the next candidate. Never abort the whole push.
+- **Op D refuses creation** (developer cancels at the preview, or the orphan phrase is not given): record as `skipped` and continue with the next candidate. Never abort the whole push.
 - **`createJiraIssue` returns non-2xx**: surface the error, mark the candidate as `failed`, leave the bead untouched. Subsequent runs will retry.
-- **Parent key disappears between Phase 3 and Phase 5** (parent push failed): treat child as `skipped` with reason "parent push failed".
+- **The parent Slice is not found or is not a Slice**: mark the candidate `skipped` with the reason, and name the Slice key that was expected. Do not fall back to creating it.
 - **Rate limits** (429): wait 5s, retry once. If still 429, mark `failed` and continue.
 
 ## Idempotency
@@ -227,18 +259,20 @@ This skill is safe to re-run because:
 ## Combined `/sync` flow (reference)
 
 ```
-Phase A — jira-sync (pull)
+Phase A — jira-sync (pull)          all five types
   ├─ Pass 0: inventory existing jira: labels
-  ├─ Pass 1: upsert open issues + recently-done window
-  ├─ Pass 2: parent reconciliation
-  └─ Pass 3: close beads whose JIRA is Done
+  ├─ Pass 1: upsert open issues + recently-closed window
+  ├─ Pass 2: parent reconciliation (cross-project is normal)
+  └─ Pass 3: close beads whose JIRA reached Done / Closed / Retired
 
-Phase B — jira-push (this skill)
-  ├─ Detect orphan beads (no jira: label)
-  ├─ Classify, sort, dry-run
-  └─ Per-bead Op D creates
+Phase B — jira-push (this skill)    Tasks and Bugs only
+  ├─ Detect beads with no jira: label
+  ├─ Classify (refuse containers and nesting), sort by Slice, dry-run
+  └─ Per-bead Op D creates under the Slice
 
 Phase C — drift close (jira-sync-back Op B)
-  └─ For each bead with jira: label that is closed locally but JIRA is open
-     transition JIRA to {jira.transitionOnClose}
+  └─ For each bead with a jira: label that is closed locally but whose JIRA
+     issue is still open, transition to {jira.transitionOnClose}.
+     Check first: if the MR is merged, the org automation has already
+     flipped the Task to Done.
 ```
