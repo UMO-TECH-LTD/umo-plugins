@@ -1,6 +1,6 @@
 # umo-mr
 
-The org-default plugin for creating GitLab merge requests. It is always active: use `/mr` (or just ask to create/open/push an MR) and the agent will parse your intent, autodetect the repo's default branch, always create a new branch for the MR unless you explicitly say otherwise, organize uncommitted work into logical conventional commits, preview the MR, push on approval, create the MR (`glab` preferred, GitLab MCP as fallback), and optionally sync a linked JIRA ticket.
+The org-default plugin for creating GitLab merge requests. It is always active: use `/mr` (or just ask to create/open/push an MR) and the agent will parse your intent, autodetect the repo's default branch, choose the source branch via the protected-branch + open-MR heuristic (or an explicit override), organize uncommitted work into logical conventional commits, push and create the MR immediately (`glab` preferred, GitLab MCP as fallback), and optionally sync a linked JIRA ticket.
 
 Conventions are ported from the UMO `saas` repo's `/mr` workflow — trunk-based development, squash merge, and Conventional-Commit MR titles with the JIRA key in parentheses at the end — and shipped as **defaults**, not hardcoded requirements. Every UMO repo can override them via an optional `.umo/mr.json`.
 
@@ -8,14 +8,15 @@ Conventions are ported from the UMO `saas` repo's `/mr` workflow — trunk-based
 
 - **Always-on:** an always-on rule (`rules/umo-mr.mdc`) reminds the agent to use `/mr` whenever the developer asks to create, open, or push a merge request — or whenever the agent itself decides finished work is ready to ship — in any repo, with or without `.umo/mr.json`.
 - **Autodetects the default branch:** never hardcodes `main`. Resolves the target branch from explicit developer input, then `.umo/mr.json`, then `git remote show origin` / `git symbolic-ref refs/remotes/origin/HEAD`.
-- **Always creates a new branch:** the default branch strategy is to branch off the detected target branch for every MR. Reusing or renaming the current branch only happens when the developer explicitly asks for it, or when the agent needs to ask because the request is genuinely ambiguous.
+- **Auto branch heuristic:** on target/protected branches always create a short-lived feature branch; otherwise reuse the current feature branch (no open MR = developer-created; open MR = update that MR). Explicit reuse/rename/new overrides win when clear.
+- **Immediate execute:** when the developer asks for commits or an MR, commit/push/create without a preview approval gate. JIRA mutations still require explicit approval.
 - **`glab`-first MR creation:** creates the MR via the `glab` CLI by default, falling back to GitLab MCP only when `glab` is missing, unauthenticated, or fails (configurable via `gitlab.mrTool`).
 
 ## Slash command
 
 | Command | Purpose |
 |---------|---------|
-| `/mr` | Parse intent, manage branches, plan commits, preview, push, create the MR, optionally sync JIRA |
+| `/mr` | Parse intent, manage branches, commit, push, create the MR immediately, optionally sync JIRA |
 
 ## Skill
 

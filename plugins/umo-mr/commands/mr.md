@@ -1,12 +1,12 @@
 ---
-description: End-to-end MR workflow — parse intent, autodetect the default branch, always create a new branch for the MR, organize changes into logical conventional commits, push with developer approval, create a GitLab MR, and optionally sync JIRA. Uses glab (preferred) or GitLab MCP (fallback). Applies trunk-based, squash-merge, commitlint-safe conventions by default, overridable per repo via .umo/mr.json. Invoke this command whenever the developer asks to create, open, or push a merge request, or whenever you decide finished work should become one. Ported from the UMO saas repo /mr workflow.
+description: End-to-end MR workflow — parse intent, autodetect the default branch, auto-choose branch via protected-branch + open-MR heuristic, organize changes into logical conventional commits, push and create a GitLab MR immediately, and optionally sync JIRA. Uses glab (preferred) or GitLab MCP (fallback). Applies trunk-based, squash-merge, commitlint-safe conventions by default, overridable per repo via .umo/mr.json. Invoke this command whenever the developer asks to create, open, or push a merge request, or whenever you decide finished work should become one. Ported from the UMO saas repo /mr workflow.
 ---
 
 # /mr
 
 ## Overview
 
-End-to-end MR workflow: parse intent from natural language, autodetect the repo's default branch, always create a new branch for the MR (unless the developer explicitly says otherwise), organize changes into logical conventional commits, push with developer approval, create a GitLab MR, and optionally link a JIRA ticket.
+End-to-end MR workflow: parse intent from natural language, autodetect the repo's default branch, choose the source branch via the Phase 2 heuristic (or explicit developer override), organize changes into logical conventional commits, **push and create a GitLab MR immediately**, and optionally link a JIRA ticket. Do **not** wait for a commit-plan or MR-preview approval — the developer's request to create commits or an MR is the approval.
 
 **Use this command whenever the developer asks to create/open/push a merge request or PR, or whenever you determine that completed work is ready to ship as one.** It is the org-default entry point for MR creation — never call `glab mr create` or a GitLab MCP `create_merge_request` tool directly outside of this flow.
 
@@ -45,23 +45,18 @@ See the `gitlab-mr` skill and this plugin's `README.md` for the full schema and 
 
 ## Phase 1: Parse Input and Clarify
 
-Extract the following from the user's free-form input. If any are ambiguous or missing, ask the developer before proceeding.
+Extract the following from the user's free-form input. Ask only when a value is truly ambiguous and cannot be defaulted or auto-detected.
 
 | Parameter | How to detect | Default |
 |-----------|---------------|---------|
 | **JIRA key** | Regex `[A-Z]+-\d+` in input (e.g. `CWN-1234`) | None (optional) |
-| **Branch strategy** | Keywords: "current branch", "rename branch" explicitly opt out of a new branch; otherwise | **Always create a new branch** |
+| **Branch strategy** | Explicit keywords: "current branch", "rename branch", "create new branch"; otherwise | **Auto** (Phase 2 heuristic) |
 | **Target branch** | Keywords: "target main", "into main", "into develop"; else `.umo/mr.json` → `gitlab.targetBranch`; else autodetect (Phase 2) | Autodetected repo default branch |
 | **Additional context** | Anything else the developer wrote | None |
 
-The default branch strategy is **always create a new branch** for the MR — do not ask this as an open question unless the input is genuinely ambiguous (e.g. the developer says something like "handle my branch" without saying whether to reuse or create one). If the developer explicitly asks to use the current branch or rename it, honor that instead.
+Do **not** ask "new vs current vs rename" on empty `/mr` input. Branch choice is decided in Phase 2. Explicit overrides still win when clear.
 
-If the input is empty or unclear, ask only what's actually ambiguous, for example:
-
-1. Is there a JIRA ticket for this work? (optional)
-2. (Only if unclear) Should I create a new branch, or do you want to use/rename the current branch?
-
-Do not ask for the target branch — it is autodetected in Phase 2 unless the developer names one explicitly.
+If the input is empty or unclear, ask only what's actually missing (e.g. optional JIRA key). Do not ask for the target branch — it is autodetected in Phase 2 unless the developer names one explicitly.
 
 ## Phase 2: Branch Setup
 
@@ -83,44 +78,60 @@ git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
 
 Do not hardcode `main` — many repos differ, and this command must work across the whole org. Store the resolved value as `{target-branch}` for use in every phase below.
 
-### Protected branch guard
+### Resolve current branch
 
 ```bash
 git branch --show-current
 ```
 
-If the current branch equals `{target-branch}`, or is `main`, `master`, or `dev`:
+Store as `{current-branch}`.
 
-- **STOP.** Warn the developer: "You are on `{branch}`. Per convention, feature work should be on a separate short-lived branch."
-- Since the default strategy is to always create a new branch, proceed to create one (see below) unless the developer explicitly wants to override and stay on the protected branch — only do that with explicit confirmation.
+### Branch heuristic (no asking)
 
-### Branch strategy: always create a new branch (default)
+Explicit developer overrides always win when clear ("use current branch", "rename …", "create new branch").
+
+Otherwise, decide automatically:
+
+1. **Protected / target branch** — if `{current-branch}` equals `{target-branch}`, or is `main`, `master`, or `dev`:
+   - Warn briefly: feature work should be on a short-lived branch.
+   - **Always create a new branch** (see below). Do not ask for confirmation. Do not stay on the protected branch unless the developer explicitly overrides.
+
+2. **Otherwise** — treat `{current-branch}` as the developer's feature branch. Detect open MRs (**glab preferred**, GitLab MCP fallback):
+
+```bash
+glab mr list --source-branch "{current-branch}"
+```
+
+If `glab` is not installed or not authenticated, fall back to the GitLab MCP:
+
+```
+CallMcpTool -> GitLab / search
+  scope: "merge_requests"
+  search: "{current-branch}"
+  project_id: "{gitlab-project-id}"
+  state: "opened"
+```
+
+- **No open MR** for this source branch → **reuse** `{current-branch}` (developer-created feature branch).
+- **Open MR exists** → **reuse** `{current-branch}`; show the MR URL; push and update that MR path — do **not** create a second branch or a duplicate MR.
+
+If neither `glab` nor the GitLab MCP is available, and the branch is not protected: reuse `{current-branch}` and mention the developer can verify with `glab mr list` after `glab auth login`.
+
+### Create new branch (when heuristic says create)
 
 Naming convention: `{type}/{JIRA-KEY}-{short-description}` — branch from `{target-branch}`.
 
 - Allowed types: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`, `test/`, `ci/`, `perf/`, `build/`
 - If a JIRA key is available, include it: `feat/CWN-1234-add-kafka-retry`
 - If no JIRA key: `feat/add-kafka-retry`
-- Derive `{short-description}` from the JIRA summary (if fetched in Phase 3) or ask the developer.
+- Derive `{short-description}` from the JIRA summary (if fetched in Phase 3) or from the diff. Do **not** stop to confirm the branch name.
 
 ```bash
 git fetch origin {target-branch}
 git checkout -b {branch-name} origin/{target-branch}
 ```
 
-Present the derived branch name to the developer before creating it if the description was inferred rather than explicitly given, so they can adjust it.
-
-### Branch strategy: use or rename current branch (only when the developer explicitly asks)
-
-**Use current branch as-is:**
-
-```bash
-git branch --show-current
-```
-
-Show the branch name and confirm with the developer.
-
-**Rename current branch:**
+### Rename current branch (only when the developer explicitly asks)
 
 ```bash
 git branch -m {old-name} {new-name}
@@ -133,28 +144,6 @@ git remote get-url origin
 ```
 
 `glab` resolves the GitLab project from the current directory's remote automatically — no explicit ID needed for most `glab` commands, so this step usually requires no extra work when using `glab`. If you need a numeric project ID anyway (e.g. for a GitLab MCP fallback), check `.umo/mr.json` → `gitlab.projectId` first, then resolve it via the GitLab MCP `search` tool (`scope: "projects"`, matching the org/repo path parsed from the remote URL).
-
-### Check for existing MR
-
-**Preferred:** use the GitLab CLI from the repo root (see skill `gitlab-mr`):
-
-```bash
-glab mr list --source-branch "{branch-name}"
-```
-
-If `glab` is not installed or not authenticated, fall back to the GitLab MCP:
-
-```
-CallMcpTool -> GitLab / search
-  scope: "merge_requests"
-  search: "{branch-name}"
-  project_id: "{gitlab-project-id}"
-  state: "opened"
-```
-
-If an MR already exists, show it to the developer and ask whether to update it or abort.
-
-If neither `glab` nor the GitLab MCP is available, skip this check and mention that the developer can run `glab mr list` after `glab auth login`.
 
 ## Phase 3: Fetch JIRA Context (optional)
 
@@ -218,9 +207,9 @@ Each commit must be:
 - **Buildable**: Code compiles/runs after this commit
 - **Logical**: Changes belong together conceptually
 
-### Step 4.3: Prepare and Present Commit Plan
+### Step 4.3: Plan Commits Internally
 
-For each proposed commit, determine:
+For each commit, determine:
 
 | Attribute | Description |
 |-----------|--------------|
@@ -231,34 +220,7 @@ For each proposed commit, determine:
 | **Files** | List of files to include in this commit |
 | **Order** | Sequence matters — dependencies before dependents |
 
-Present the plan to the developer in this format:
-
-```
-## Proposed Commits
-
-### Commit 1 of N
-**Message:** `type(scope): description`
-**Files:**
-- path/to/file1
-- path/to/file2
-
-**Rationale:** Why these files belong together
-
-**Commands:**
-git add path/to/file1 path/to/file2
-git commit -m "type(scope): description"
-
----
-
-(repeat for all commits)
-
-## Summary
-- Total commits: N
-- Types: X feat, Y fix, Z chore
-- Breaking changes: Yes/No
-
-Ready to proceed? (yes/no/adjust)
-```
+Do **not** present a commit plan and wait for "yes/no/adjust". Plan silently, then execute in Step 4.4.
 
 For multi-line commit messages, use heredoc syntax:
 
@@ -273,7 +235,7 @@ EOF
 )"
 ```
 
-**Adjustment protocol** — if the developer wants changes:
+**Later adjustment** — only if the developer asks after commits exist:
 
 - **"merge 2 and 3"** — combine commits
 - **"split commit 2"** — break into smaller commits
@@ -281,11 +243,9 @@ EOF
 - **"add file X to commit 2"** — reassign files
 - **"reorder: 2, 1, 3"** — change commit sequence
 
-Revise the plan and re-present until the developer approves.
+### Step 4.4: Execute Commits Immediately
 
-### Step 4.4: Execute Commits (after approval)
-
-For each commit in the approved plan, in order:
+For each planned commit, in order:
 
 1. **Stage specific files:**
    ```bash
@@ -302,7 +262,7 @@ For each commit in the approved plan, in order:
    git log -1 --stat
    ```
 
-4. **Report progress:**
+4. **Report progress (post-fact, not a gate):**
    ```
    Commit 1/N created: feat(auth): add user authentication service
    Commit 2/N created: feat(api): add login and logout endpoints
@@ -351,35 +311,15 @@ If the target repo runs an MR pipeline (check `.gitlab-ci.yml` for a `commitlint
 
 Treat this section as informational; do not assume every repo has these jobs — inspect the repo's own CI config if you need certainty.
 
-## Phase 5: Preview and Push (approval gate)
+## Phase 5: Push
 
-Build and display a full preview for the developer:
-
-```
-## MR Preview
-
-**Branch:** {source-branch} -> {target-branch}
-
-**Commits:**
-{output of git log {target-branch}..HEAD --oneline}
-
-**MR Title:** {draft title}
-
-**MR Description:**
-{draft description — see MR Description Template below}
-
----
-
-Ready to push and create MR? (yes / adjust / abort)
-```
-
-- **Do NOT push until the developer approves.**
-- If the developer says "adjust", ask what to change and update the preview.
-- On approval:
+Build MR title and description internally (see templates below), then **push immediately** — do not wait for preview approval.
 
 ```bash
 git push -u origin HEAD
 ```
+
+Report branch and draft title briefly after push (informational only).
 
 ## Phase 6: Create MR
 
@@ -388,6 +328,8 @@ Use this order:
 1. **`glab` CLI** (default/preferred) — see the `gitlab-mr` skill
 2. **GitLab MCP** (fallback, when `glab` is not installed, not authenticated, or fails) — unless `.umo/mr.json` sets `gitlab.mrTool: "mcp"`, in which case try MCP first and fall back to `glab`
 3. **Manual** — copy title and description into the GitLab UI, if neither is available
+
+If an open MR already exists for the source branch (Phase 2), do not create a duplicate — push updates and report the existing URL (update description via GitLab tools only when needed).
 
 ### With glab (default)
 
@@ -537,7 +479,7 @@ Use the repo's own MR template if one exists at `.gitlab/merge_request_templates
 {Bullet list generated from git log {target-branch}..HEAD --oneline}
 
 ## How to Test
-{From JIRA acceptance criteria if available, otherwise ask developer or leave placeholder}
+{From JIRA acceptance criteria if available, otherwise leave placeholder}
 
 ## Checklist
 - [ ] Added tests
@@ -551,7 +493,7 @@ When no JIRA key is provided, omit the "JIRA Ticket" section entirely.
 
 ## Branch Naming Convention
 
-Format: `{type}/{JIRA-KEY}-{short-description}` (or `{type}/{short-description}` without JIRA). Always branch from the autodetected target/trunk branch (see Phase 2).
+Format: `{type}/{JIRA-KEY}-{short-description}` (or `{type}/{short-description}` without JIRA). When creating a new branch, always branch from the autodetected target/trunk branch (see Phase 2).
 
 | Type | When to use |
 |------|-------------|
@@ -568,7 +510,7 @@ Format: `{type}/{JIRA-KEY}-{short-description}` (or `{type}/{short-description}`
 Derive the type from the JIRA issue type when available:
 - Story / Feature -> `feat/`
 - Bug -> `fix/`
-- Task / Sub-task -> `feat/` (or ask developer)
+- Task / Sub-task -> `feat/`
 - Epic -> `feat/`
 
 ## Example Invocations
@@ -579,23 +521,23 @@ Derive the type from the JIRA issue type when available:
 /mr in current branch using JIRA ticket CWN-1234
 ```
 
-Parsed: branch strategy = current (explicit override), JIRA key = CWN-1234, target = autodetected default branch.
+Parsed: branch strategy = current (explicit override), JIRA key = CWN-1234, target = autodetected default branch. Commits/push/MR run immediately.
 
-**Interactive — no input:**
+**No input — auto branch heuristic:**
 
 ```
 /mr
 ```
 
-Default branch strategy = create a new branch (no need to ask). Agent autodetects the target branch, asks only about a JIRA ticket if unclear, then proceeds through all phases.
+On target/protected → create new branch automatically. On a feature branch with no open MR → reuse it. On a feature branch with an open MR → reuse and update. Agent autodetects the target branch and proceeds immediately (optional JIRA only if useful).
 
-**New branch with JIRA ticket (also the implicit default without "create new branch"):**
+**New branch with JIRA ticket:**
 
 ```
 /mr create new branch for CWN-5678
 ```
 
-Parsed: branch strategy = new (default), JIRA key = CWN-5678, target = autodetected default branch. Agent fetches JIRA summary to derive branch name.
+Parsed: branch strategy = new (explicit), JIRA key = CWN-5678, target = autodetected default branch. Agent fetches JIRA summary to derive branch name and proceeds immediately.
 
 **No JIRA, plain request:**
 
@@ -603,7 +545,7 @@ Parsed: branch strategy = new (default), JIRA key = CWN-5678, target = autodetec
 /mr push current branch and create MR
 ```
 
-Parsed: branch strategy = current (explicit override, since the developer named "current branch"), no JIRA, target = autodetected default branch. MR description built from commits only.
+Parsed: branch strategy = current (explicit override), no JIRA, target = autodetected default branch. MR description built from commits only; push and create immediately.
 
 **No JIRA, generic request (most common case):**
 
@@ -617,4 +559,4 @@ or
 create an MR for this
 ```
 
-Parsed: branch strategy = new (default — no branch was named), target = autodetected default branch. Agent creates a new branch, plans commits, and proceeds through all phases.
+Parsed: branch strategy = auto (Phase 2 heuristic), target = autodetected default branch. Agent commits, pushes, and creates/updates the MR without preview gates.

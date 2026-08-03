@@ -9,13 +9,13 @@ alwaysApply: true
 
 ## MR creation rule
 
-**Always use `/mr` to create Merge Requests.** Do not call `glab mr create` or a GitLab MCP `create_merge_request` tool directly, and do not hand-roll branch/commit/push steps for the purpose of opening an MR. The `/mr` command is the single entry point — it autodetects the repo's default branch, always creates a new branch for the MR (asking only when the branch strategy is genuinely ambiguous), handles commit planning with an approval gate, the MR preview, push, MR creation (glab → GitLab MCP fallback → manual), and optional JIRA sync as one approved flow.
+**Always use `/mr` to create Merge Requests.** Do not call `glab mr create` or a GitLab MCP `create_merge_request` tool directly, and do not hand-roll branch/commit/push steps for the purpose of opening an MR. The `/mr` command is the single entry point — it autodetects the repo's default branch, chooses the source branch via the protected-branch + open-MR heuristic (or an explicit developer override), commits immediately when needed, pushes, creates the MR (glab → GitLab MCP fallback → manual), and optionally syncs JIRA. Do **not** gate commits or MR creation on a preview approval — the developer's request is the approval.
 
-Invoking the `gitlab-mr` skill directly, outside of `/mr` Phase 6, bypasses the preview/approval gates and can produce MRs with the wrong title format or an unreviewed description.
+Invoking the `gitlab-mr` skill directly, outside of `/mr` Phase 6, can produce MRs with the wrong title format or incomplete branch/commit handling — always go through `/mr`.
 
 ## Conventions summary (defaults, overridable via `.umo/mr.json`)
 
-- **Branch strategy:** always create a new branch for the MR — `{type}/{JIRA-KEY}-{short-description}` (or `{type}/{short-description}` without a ticket) — types: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`, `ci`, `perf`, `build`. Only reuse/rename the current branch if the developer explicitly asks, or ask when it's unclear which branch to use.
+- **Branch strategy:** auto — on target/protected (`main`/`master`/`dev`/`{target-branch}`) always create `{type}/{JIRA-KEY}-{short-description}` (or without ticket); otherwise reuse the current feature branch (no open MR = developer-created branch; open MR = update that MR). Explicit reuse/rename/new overrides win when clear. Types: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`, `ci`, `perf`, `build`.
 - **Target branch:** autodetected from the repo's GitLab/git default branch (e.g. `main`), not hardcoded — overridable via `.umo/mr.json` → `gitlab.targetBranch`.
 - **MR title:** `{type}(scope): lowercase imperative subject (JIRA-KEY)` — Conventional Commits, JIRA key in parentheses **at the end**, commitlint-safe.
 - **Merge strategy:** squash by default (`--squash-before-merge` via glab, or the MCP equivalent).
@@ -26,7 +26,7 @@ Invoking the `gitlab-mr` skill directly, outside of `/mr` Phase 6, bypasses the 
 
 | Command | Purpose |
 |---------|---------|
-| `/mr` | Parse intent, manage branches, plan commits, preview, push, create MR, optionally sync JIRA |
+| `/mr` | Parse intent, manage branches, commit, push, create MR immediately, optionally sync JIRA |
 
 ## Config location (optional)
 

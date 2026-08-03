@@ -1,7 +1,7 @@
 {
   "name": "umo-mr",
   "version": "0.1.0",
-  "description": "UMO MR — the org-default /mr command for creating GitLab merge requests, active whenever the developer or agent wants to create one: parses intent, autodetects the default branch, always creates a new branch, organizes conventional commits, previews, pushes, creates the MR (glab preferred, GitLab MCP fallback), and optionally syncs JIRA.",
+  "description": "UMO MR — the org-default /mr command for creating GitLab merge requests, active whenever the developer or agent wants to create one: parses intent, autodetects the default branch, auto-chooses branch via protected + open-MR heuristic, organizes conventional commits, pushes and creates the MR immediately (glab preferred, GitLab MCP fallback), and optionally syncs JIRA.",
   "author": {
     "name": "UMO Platform Team"
   },
