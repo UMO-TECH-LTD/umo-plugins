@@ -30,35 +30,35 @@ FLOW (level 2, the unit of value and cost)
 
 ## Slash commands
 
-| Command | Purpose |
-|---------|---------|
-| `/umo-jira-tracker:setup` | First-run wizard: verify tools, write `.umo/jira-tracker.json` |
+| Command                                                                       | Purpose                                                                                        |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `/umo-jira-tracker:setup`                                                     | First-run wizard: verify tools, write `.umo/jira-tracker.json`                                 |
 | `/umo-jira-tracker:sync [--dry-run] [--jql "..."] [--pull-only\|--push-only]` | Two-way sync: pull JIRA→Beads, then promote unsynced beads → JIRA, then reconcile status drift |
-| `/umo-jira-tracker:work [KEY\|bead-id\|--ready]` | Claim a bead, discuss AC with AI, push refinements back to JIRA |
-| `/umo-jira-tracker:create task\|bug --parent <SLICE-KEY>` | Create a JIRA Task or Bug under a Slice |
-| `/umo-jira-tracker:commit` | Group staged changes into conventional commits, generate MR description |
-| `/umo-jira-tracker:mr` | Create a GitLab MR and sync JIRA (comment + description) |
-| `/umo-jira-tracker:close [bead-id]` | Close the bead and transition JIRA |
+| `/umo-jira-tracker:work [KEY\|bead-id\|--ready]`                              | Claim a bead, discuss AC with AI, push refinements back to JIRA                                |
+| `/umo-jira-tracker:create task\|bug --parent <SLICE-KEY>`                     | Create a JIRA Task or Bug under a Slice                                                        |
+| `/umo-jira-tracker:commit`                                                    | Group staged changes into conventional commits, generate MR description                        |
+| `/umo-jira-tracker:mr`                                                        | Create a GitLab MR and sync JIRA (comment + description)                                       |
+| `/umo-jira-tracker:close [bead-id]`                                           | Close the bead and transition JIRA                                                             |
 
 ## Skills
 
-| Skill | Purpose |
-|-------|---------|
-| `jira-tracker-setup` | Tool verification + config writer |
-| `jira-sync` | JIRA → Beads pull (Phase A of `/sync`) |
-| `jira-push` | Beads → JIRA promotion (Phase B of `/sync`) |
-| `jira-bead-bridge` | Claim, discuss, refine, push AC back to JIRA |
-| `gitlab-mr` | glab / GitLab MCP MR creation reference |
-| `jira-sync-back` | All JIRA mutations: comments, transitions, issue creation |
+| Skill                | Purpose                                                   |
+| -------------------- | --------------------------------------------------------- |
+| `jira-tracker-setup` | Tool verification + config writer                         |
+| `jira-sync`          | JIRA → Beads pull (Phase A of `/sync`)                    |
+| `jira-push`          | Beads → JIRA promotion (Phase B of `/sync`)               |
+| `jira-bead-bridge`   | Claim, discuss, refine, push AC back to JIRA              |
+| `gitlab-mr`          | glab / GitLab MCP MR creation reference                   |
+| `jira-sync-back`     | All JIRA mutations: comments, transitions, issue creation |
 
 ## Prerequisites
 
-| Tool | Purpose | How to get |
-|------|---------|------------|
-| `bd` | Local Beads CLI | Follow your org's Beads install guide |
-| `glab` | GitLab CLI for MR creation | `brew install glab` or see [glab docs](https://gitlab.com/gitlab-org/cli) |
-| Atlassian MCP | JIRA read/write | Configure in Cursor Settings → MCP |
-| GitLab MCP (optional) | Alternative MR creation | Configure `@zereight/mcp-gitlab` in Cursor Settings → MCP |
+| Tool                  | Purpose                    | How to get                                                                |
+| --------------------- | -------------------------- | ------------------------------------------------------------------------- |
+| `bd`                  | Local Beads CLI            | Follow your org's Beads install guide                                     |
+| `glab`                | GitLab CLI for MR creation | `brew install glab` or see [glab docs](https://gitlab.com/gitlab-org/cli) |
+| Atlassian MCP         | JIRA read/write            | Configure in Cursor Settings → MCP                                        |
+| GitLab MCP (optional) | Alternative MR creation    | Configure `@zereight/mcp-gitlab` in Cursor Settings → MCP                 |
 
 The Jira instance must be **Premium** — the Flow level sits above the epic, which Standard cannot express.
 
@@ -76,12 +76,12 @@ Add to your Cursor / Claude `mcp.json`:
 
 ```json
 {
-  "mcpServers": {
-    "Atlassian": {
-      "url": "https://mcp.atlassian.com/v1/mcp",
-      "headers": {}
+    "mcpServers": {
+        "Atlassian": {
+            "url": "https://mcp.atlassian.com/v1/mcp",
+            "headers": {}
+        }
     }
-  }
 }
 ```
 
@@ -91,17 +91,17 @@ No API key is stored in this plugin. Authentication is handled by the MCP host.
 
 ```json
 {
-  "mcpServers": {
-    "gitlab": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@zereight/mcp-gitlab"],
-      "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}",
-        "GITLAB_API_URL": "https://gitlab.com/api/v4"
-      }
+    "mcpServers": {
+        "gitlab": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@zereight/mcp-gitlab"],
+            "env": {
+                "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}",
+                "GITLAB_API_URL": "https://gitlab.com/api/v4"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -109,18 +109,18 @@ No API key is stored in this plugin. Authentication is handled by the MCP host.
 
 Projects match squads, one team backlog each.
 
-| Key | Project |
-|---|---|
-| PLAT | Platform |
-| DATA | Data |
-| AI | AI |
-| EXP | Experience *(squad: Customer Experience)* |
-| CRY | Crypto |
-| PAY | Payments |
-| CARD | Cards |
-| FIN | Financial Core *(squad: Transactions & Accounting)* |
-| CMP | Compliance/Support |
-| BO | Backoffice Portal |
+| Key  | Project                                             |
+| ---- | --------------------------------------------------- |
+| PLAT | Platform                                            |
+| DATA | Data                                                |
+| AI   | AI                                                  |
+| EXP  | Experience _(squad: Customer Experience)_           |
+| CRY  | Crypto                                              |
+| PAY  | Payments                                            |
+| CARD | Cards                                               |
+| FIN  | Financial Core _(squad: Transactions & Accounting)_ |
+| CMP  | Compliance/Support                                  |
+| BO   | Backoffice Portal                                   |
 
 ## Per-repo configuration
 
@@ -128,40 +128,40 @@ Run `/umo-jira-tracker:setup` to generate `.umo/jira-tracker.json`. The file is 
 
 During setup you choose the `/sync` scope:
 
-| Scope | JQL |
-|-------|-----|
-| All open assigned issues (default) | `assignee = currentUser() AND statusCategory != Done` |
-| One flow — everything serving it, across projects | `issuekey in portfolioChildIssuesOf("{FLOW-KEY}")` |
-| One slice | `parent = {SLICE-KEY} OR issuekey = {SLICE-KEY}` |
+| Scope                                             | JQL                                                   |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| All open assigned issues (default)                | `assignee = currentUser() AND statusCategory != Done` |
+| One flow — everything serving it, across projects | `issuekey in portfolioChildIssuesOf("{FLOW-KEY}")`    |
+| One slice                                         | `parent = {SLICE-KEY} OR issuekey = {SLICE-KEY}`      |
 
 Example config:
 
 ```json
 {
-  "jira": {
-    "cloudUrl": "https://umotech.atlassian.net",
-    "defaultProjectKey": "PAY",
-    "syncJql": "assignee = currentUser() AND statusCategory != Done",
-    "transitionOnClose": "Done"
-  },
-  "gitlab": {
-    "remote": "origin",
-    "projectId": null,
-    "targetBranch": "dev",
-    "mrTool": "glab"
-  },
-  "beads": {
-    "labelPrefix": "jira",
-    "titleFormat": "[{key}] {summary}",
-    "containerTypes": ["Flow", "Slice"],
-    "workTypes": ["Task", "Bug", "Request"],
-    "creatableTypes": ["Task", "Bug"]
-  },
-  "sync": {
-    "direction": "both",
-    "skipLabel": "jira-skip",
-    "recentlyDoneWindow": "-14d"
-  }
+    "jira": {
+        "cloudUrl": "https://umotech.atlassian.net",
+        "defaultProjectKey": "PAY",
+        "syncJql": "assignee = currentUser() AND statusCategory != Done",
+        "transitionOnClose": "Done"
+    },
+    "gitlab": {
+        "remote": "origin",
+        "projectId": null,
+        "targetBranch": "main",
+        "mrTool": "glab"
+    },
+    "beads": {
+        "labelPrefix": "jira",
+        "titleFormat": "[{key}] {summary}",
+        "containerTypes": ["Flow", "Slice"],
+        "workTypes": ["Task", "Bug", "Request"],
+        "creatableTypes": ["Task", "Bug"]
+    },
+    "sync": {
+        "direction": "both",
+        "skipLabel": "jira-skip",
+        "recentlyDoneWindow": "-14d"
+    }
 }
 ```
 
@@ -169,12 +169,12 @@ Example config:
 
 Pull handles all five types.
 
-| JIRA type | Bead type | Parent bead |
-|-----------|-----------|-------------|
-| Flow | epic | none — Flow is the root |
-| Slice | epic | Flow-bead |
-| Task / Bug | task | Slice-bead |
-| Request | task | Slice-bead — the **consumer's** slice, cross-project |
+| JIRA type  | Bead type | Parent bead                                          |
+| ---------- | --------- | ---------------------------------------------------- |
+| Flow       | epic      | none — Flow is the root                              |
+| Slice      | epic      | Flow-bead                                            |
+| Task / Bug | task      | Slice-bead                                           |
+| Request    | task      | Slice-bead — the **consumer's** slice, cross-project |
 
 Bead title format: `[PAY-1234] [IC-S2] <JIRA summary>` — the slice coordinate the summary already carries is preserved.
 
@@ -186,14 +186,14 @@ Pull also includes a **recently-closed window** (`sync.recentlyDoneWindow`, defa
 
 Push handles two types, and that asymmetry is the point.
 
-| Bead `type` | Parent context | Result |
-|-------------|----------------|--------|
-| `task` / `chore` / `feature` | parent resolves to a **Slice** | **Task** — create |
-| `bug` | parent resolves to a **Slice** | **Bug** — create |
-| any | parent is a Task, Bug or Request | **refused** — that would be a Sub-task. Leave it in Beads, or push it as a sibling under the same Slice |
-| `epic` | any | **refused** — Slices and Flows are the flow PM's to author |
-| any | no parent | orphan warning; suggests the squad's `[TH-<KEY>-S0]` tech-health slice, then requires `create unlinked` |
-| `decision` | any | always skipped (ADRs stay local) |
+| Bead `type`                  | Parent context                   | Result                                                                                                  |
+| ---------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `task` / `chore` / `feature` | parent resolves to a **Slice**   | **Task** — create                                                                                       |
+| `bug`                        | parent resolves to a **Slice**   | **Bug** — create                                                                                        |
+| any                          | parent is a Task, Bug or Request | **refused** — that would be a Sub-task. Leave it in Beads, or push it as a sibling under the same Slice |
+| `epic`                       | any                              | **refused** — Slices and Flows are the flow PM's to author                                              |
+| any                          | no parent                        | orphan warning; suggests the squad's `[TH-<KEY>-S0]` tech-health slice, then requires `create unlinked` |
+| `decision`                   | any                              | always skipped (ADRs stay local)                                                                        |
 
 **A push that promotes nothing is a normal outcome.** Most beads are steps inside an existing Task, and steps stay in git. Promote a bead only when it has become a **unit of assignment or delivery** — and you rarely need to decide manually, because the merge gate promotes anything that ends in a merge.
 
@@ -201,8 +201,8 @@ Full classification rules: `skills/jira-push/references/bead-type-mapping.md`.
 
 ### Opt-out label
 
-| Label | Effect |
-|-------|--------|
+| Label       | Effect                                                                        |
+| ----------- | ----------------------------------------------------------------------------- |
 | `jira-skip` | Force-exclude this bead from push entirely. Configurable via `sync.skipLabel` |
 
 There is no opt-**in** label. The classifier already declines anything that is not a unit of delivery; a label to override that would defeat the rule it exists to enforce.
@@ -232,11 +232,11 @@ Use `bd label add <id> jira-skip` to keep a bead out of JIRA permanently.
 {type}/{JIRA-KEY}-{short-description}
 ```
 
-| Component | Required | Notes |
-|-----------|----------|-------|
-| `type` | Yes | `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build` |
-| `JIRA-KEY` | Yes | e.g. `PAY-1234` |
-| `short-description` | Yes | 2–5 words, kebab-case |
+| Component           | Required | Notes                                                                               |
+| ------------------- | -------- | ----------------------------------------------------------------------------------- |
+| `type`              | Yes      | `feat`, `fix`, `hotfix`, `chore`, `refactor`, `test`, `docs`, `ci`, `perf`, `build` |
+| `JIRA-KEY`          | Yes      | e.g. `PAY-1234`                                                                     |
+| `short-description` | Yes      | 2–5 words, kebab-case                                                               |
 
 Multiple JIRA keys: `feat/PAY-1234-PAY-1235-login-refactor`
 
@@ -268,13 +268,13 @@ Dash in the coordinate, never slash, so names stay safe if they appear in file n
 
 ### Forbidden
 
-| Pattern | Why forbidden |
-|---------|---------------|
-| Branch or MR title without a JIRA key | Fails CI, cannot merge, and the Done automation has nothing to key off |
-| Names like `tmp`, `wip`, `test`, `my-branch` | No context |
-| Layer names, person names, status words, "part 2 / misc / fixes" in a JIRA summary | Coordinates and outcomes only — nothing mutable |
-| Multiple unrelated tasks in one branch | Violates atomic MR principle |
-| Direct commits to `main`, `dev`, `release` | Bypasses review |
+| Pattern                                                                            | Why forbidden                                                          |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Branch or MR title without a JIRA key                                              | Fails CI, cannot merge, and the Done automation has nothing to key off |
+| Names like `tmp`, `wip`, `test`, `my-branch`                                       | No context                                                             |
+| Layer names, person names, status words, "part 2 / misc / fixes" in a JIRA summary | Coordinates and outcomes only — nothing mutable                        |
+| Multiple unrelated tasks in one branch                                             | Violates atomic MR principle                                           |
+| Direct commits to `main`, `dev`, `release`                                         | Bypasses review                                                        |
 
 ## JIRA issue creation rules
 

@@ -18,26 +18,26 @@ If present at the repo root, read it and use its values instead of the defaults 
 
 ```json
 {
-  "gitlab": {
-    "remote": "origin",
-    "projectId": null,
-    "targetBranch": null,
-    "mrTool": "glab",
-    "squash": true
-  },
-  "jira": {
-    "enabled": true,
-    "baseUrl": "https://umotech.atlassian.net",
-    "defaultProjectKey": null
-  },
-  "commit": {
-    "allowedTypes": ["feat", "fix", "refactor", "chore", "test", "docs", "ci", "perf", "build", "revert"],
-    "maxSubjectLength": 120
-  },
-  "mrTemplatePath": ".gitlab/merge_request_templates/Default.md",
-  "user": {
-    "gitlabUsername": null
-  }
+    "gitlab": {
+        "remote": "origin",
+        "projectId": null,
+        "targetBranch": "main",
+        "mrTool": "glab",
+        "squash": true
+    },
+    "jira": {
+        "enabled": true,
+        "baseUrl": "https://umotech.atlassian.net",
+        "defaultProjectKey": null
+    },
+    "commit": {
+        "allowedTypes": ["feat", "fix", "refactor", "chore", "test", "docs", "ci", "perf", "build", "revert"],
+        "maxSubjectLength": 120
+    },
+    "mrTemplatePath": ".gitlab/merge_request_templates/Default.md",
+    "user": {
+        "gitlabUsername": null
+    }
 }
 ```
 
@@ -47,12 +47,12 @@ See the `gitlab-mr` skill and this plugin's `README.md` for the full schema and 
 
 Extract the following from the user's free-form input. Ask only when a value is truly ambiguous and cannot be defaulted or auto-detected.
 
-| Parameter | How to detect | Default |
-|-----------|---------------|---------|
-| **JIRA key** | Regex `[A-Z]+-\d+` in input (e.g. `CWN-1234`) | None (optional) |
-| **Branch strategy** | Explicit keywords: "current branch", "rename branch", "create new branch"; otherwise | **Auto** (Phase 2 heuristic) |
-| **Target branch** | Keywords: "target main", "into main", "into develop"; else `.umo/mr.json` → `gitlab.targetBranch`; else autodetect (Phase 2) | Autodetected repo default branch |
-| **Additional context** | Anything else the developer wrote | None |
+| Parameter              | How to detect                                                                                                                | Default                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **JIRA key**           | Regex `[A-Z]+-\d+` in input (e.g. `CWN-1234`)                                                                                | None (optional)                  |
+| **Branch strategy**    | Explicit keywords: "current branch", "rename branch", "create new branch"; otherwise                                         | **Auto** (Phase 2 heuristic)     |
+| **Target branch**      | Keywords: "target main", "into main", "into develop"; else `.umo/mr.json` → `gitlab.targetBranch`; else autodetect (Phase 2) | Autodetected repo default branch |
+| **Additional context** | Anything else the developer wrote                                                                                            | None                             |
 
 Do **not** ask "new vs current vs rename" on empty `/mr` input. Branch choice is decided in Phase 2. Explicit overrides still win when clear.
 
@@ -93,8 +93,8 @@ Explicit developer overrides always win when clear ("use current branch", "renam
 Otherwise, decide automatically:
 
 1. **Protected / target branch** — if `{current-branch}` equals `{target-branch}`, or is `main`, `master`, or `dev`:
-   - Warn briefly: feature work should be on a short-lived branch.
-   - **Always create a new branch** (see below). Do not ask for confirmation. Do not stay on the protected branch unless the developer explicitly overrides.
+    - Warn briefly: feature work should be on a short-lived branch.
+    - **Always create a new branch** (see below). Do not ask for confirmation. Do not stay on the protected branch unless the developer explicitly overrides.
 
 2. **Otherwise** — treat `{current-branch}` as the developer's feature branch. Detect open MRs (**glab preferred**, GitLab MCP fallback):
 
@@ -166,10 +166,10 @@ CallMcpTool -> Atlassian / getJiraIssue
 ```
 
 3. Extract and store for later use:
-   - **Summary** (for MR title and branch name)
-   - **Description** (for "What this MR does?" and "Why?")
-   - **Acceptance criteria** (for "How to Test")
-   - **Priority and type** (for branch type prefix if creating a new branch)
+    - **Summary** (for MR title and branch name)
+    - **Description** (for "What this MR does?" and "Why?")
+    - **Acceptance criteria** (for "How to Test")
+    - **Priority and type** (for branch type prefix if creating a new branch)
 
 If the Atlassian MCP is unavailable or no JIRA key was given, skip this phase. The MR description will be built from commit messages and developer input instead.
 
@@ -203,6 +203,7 @@ Group related changes into logical commits. Consider:
 - **Dependencies first**: Config/dependency changes before code that uses them
 
 Each commit must be:
+
 - **Atomic**: Can be reverted independently
 - **Buildable**: Code compiles/runs after this commit
 - **Logical**: Changes belong together conceptually
@@ -211,14 +212,14 @@ Each commit must be:
 
 For each commit, determine:
 
-| Attribute | Description |
-|-----------|--------------|
-| **Type** | `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert` |
-| **Scope** | Optional — affected area (e.g., `auth`, `api`, `config`, or service name in a monorepo) |
-| **Breaking** | Does it break backward compatibility? Add `!` if yes |
-| **Description** | Imperative mood, concise summary |
-| **Files** | List of files to include in this commit |
-| **Order** | Sequence matters — dependencies before dependents |
+| Attribute       | Description                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| **Type**        | `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert` |
+| **Scope**       | Optional — affected area (e.g., `auth`, `api`, `config`, or service name in a monorepo)      |
+| **Breaking**    | Does it break backward compatibility? Add `!` if yes                                         |
+| **Description** | Imperative mood, concise summary                                                             |
+| **Files**       | List of files to include in this commit                                                      |
+| **Order**       | Sequence matters — dependencies before dependents                                            |
 
 Do **not** present a commit plan and wait for "yes/no/adjust". Plan silently, then execute in Step 4.4.
 
@@ -248,26 +249,29 @@ EOF
 For each planned commit, in order:
 
 1. **Stage specific files:**
-   ```bash
-   git add <file1> <file2> ...
-   ```
+
+    ```bash
+    git add <file1> <file2> ...
+    ```
 
 2. **Create commit with conventional message:**
-   ```bash
-   git commit -m "type(scope): description"
-   ```
+
+    ```bash
+    git commit -m "type(scope): description"
+    ```
 
 3. **Verify before proceeding to next:**
-   ```bash
-   git log -1 --stat
-   ```
+
+    ```bash
+    git log -1 --stat
+    ```
 
 4. **Report progress (post-fact, not a gate):**
-   ```
-   Commit 1/N created: feat(auth): add user authentication service
-   Commit 2/N created: feat(api): add login and logout endpoints
-   ...
-   ```
+    ```
+    Commit 1/N created: feat(auth): add user authentication service
+    Commit 2/N created: feat(api): add login and logout endpoints
+    ...
+    ```
 
 ### Step 4.5: Post-commit Verification
 
@@ -283,18 +287,18 @@ If there are zero commits ahead of the target branch, warn the developer: "No co
 
 Individual commit types matter for code organisation; if the repo squash-merges (the UMO default), the **MR title** drives any automated release/SemVer tooling — see "Squash merge & release" below.
 
-| Type | When to Use |
-|------|-------------|
-| `feat` | New feature for users |
-| `fix` | Bug fix for users |
-| `docs` | Documentation only |
+| Type       | When to Use                            |
+| ---------- | -------------------------------------- |
+| `feat`     | New feature for users                  |
+| `fix`      | Bug fix for users                      |
+| `docs`     | Documentation only                     |
 | `refactor` | Code restructuring, no behavior change |
-| `perf` | Performance improvement |
-| `test` | Adding/fixing tests |
-| `build` | Build system, dependencies |
-| `ci` | CI/CD configuration |
-| `chore` | Maintenance, tooling |
-| `revert` | Reverting previous commit |
+| `perf`     | Performance improvement                |
+| `test`     | Adding/fixing tests                    |
+| `build`    | Build system, dependencies             |
+| `ci`       | CI/CD configuration                    |
+| `chore`    | Maintenance, tooling                   |
+| `revert`   | Reverting previous commit              |
 
 - **Description**: Imperative mood ("add" not "added"), **lowercase** (commitlint `subject-case` — no leading `CWN-1234`, no Capitalized words), no trailing dot
 - **JIRA in MR title**: end with `(JIRA-KEY)` — e.g. `fix(statistic): trigger patch release (CWN-6215)`
@@ -387,6 +391,7 @@ Only execute if a JIRA key was provided, the Atlassian MCP is available, and `.u
 MR created: {MR_URL}
 
 ### Changes
+
 {bullet list of commits}
 ```
 
@@ -452,12 +457,12 @@ fix(statistic): trigger patch release (CWN-6215)
 
 **Common commitlint failures:**
 
-| Rule | Bad | Good |
-|------|-----|------|
+| Rule           | Bad                                              | Good                                               |
+| -------------- | ------------------------------------------------ | -------------------------------------------------- |
 | `subject-case` | `fix(statistic): CWN-6215 trigger patch release` | `fix(statistic): trigger patch release (CWN-6215)` |
-| `subject-case` | `feat(auth): Add user login` | `feat(auth): add user login` |
-| trailing dot | `fix(api): handle timeout.` | `fix(api): handle timeout` |
-| type | `feature(statistic): …` | `feat(statistic): …` |
+| `subject-case` | `feat(auth): Add user login`                     | `feat(auth): add user login`                       |
+| trailing dot   | `fix(api): handle timeout.`                      | `fix(api): handle timeout`                         |
+| type           | `feature(statistic): …`                          | `feat(statistic): …`                               |
 
 Allowed types (default, overridable via `.umo/mr.json` → `commit.allowedTypes`): `feat`, `fix`, `refactor`, `chore`, `test`, `docs`, `ci`, `perf`, `build`, `revert`. Avoid `feat!` / `BREAKING CHANGE:` unless agreed with the platform/DevOps team.
 
@@ -467,21 +472,27 @@ Use the repo's own MR template if one exists at `.gitlab/merge_request_templates
 
 ```markdown
 ## JIRA Ticket
+
 [{JIRA-KEY}]({jira-base-url}/browse/{JIRA-KEY})
 
 ## What this MR does?
+
 {Auto-generated from JIRA description + commit analysis}
 
 ## Why?
+
 {From JIRA ticket context or developer input}
 
 ## Changes Made
+
 {Bullet list generated from git log {target-branch}..HEAD --oneline}
 
 ## How to Test
+
 {From JIRA acceptance criteria if available, otherwise leave placeholder}
 
 ## Checklist
+
 - [ ] Added tests
 - [ ] Updated documentation
 - [ ] Self-reviewed code
@@ -495,19 +506,20 @@ When no JIRA key is provided, omit the "JIRA Ticket" section entirely.
 
 Format: `{type}/{JIRA-KEY}-{short-description}` (or `{type}/{short-description}` without JIRA). When creating a new branch, always branch from the autodetected target/trunk branch (see Phase 2).
 
-| Type | When to use |
-|------|-------------|
-| `feat/` | New feature |
-| `fix/` | Bug fix |
-| `refactor/` | Code restructuring |
-| `docs/` | Documentation |
-| `chore/` | Maintenance, tooling |
-| `test/` | Adding or fixing tests |
-| `ci/` | CI/CD configuration |
-| `perf/` | Performance improvement |
-| `build/` | Build system, dependencies |
+| Type        | When to use                |
+| ----------- | -------------------------- |
+| `feat/`     | New feature                |
+| `fix/`      | Bug fix                    |
+| `refactor/` | Code restructuring         |
+| `docs/`     | Documentation              |
+| `chore/`    | Maintenance, tooling       |
+| `test/`     | Adding or fixing tests     |
+| `ci/`       | CI/CD configuration        |
+| `perf/`     | Performance improvement    |
+| `build/`    | Build system, dependencies |
 
 Derive the type from the JIRA issue type when available:
+
 - Story / Feature -> `feat/`
 - Bug -> `fix/`
 - Task / Sub-task -> `feat/`
