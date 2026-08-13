@@ -1,0 +1,25 @@
+{
+  "name": "umo-go",
+  "version": "0.1.0",
+  "description": "UMO Go — the go-coder agent plus the house Go skill set: hexagonal service layout, Google Go style, Atlas migrations, devkit clients (NATS, FeatureScript, audit-log, remote config, Sentry, Pyroscope), Dockerfile rules, quality gates, and the go.work loop for unreleased proto-api / devkit modules.",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "umo",
+    "umo-go",
+    "go",
+    "golang",
+    "go-coder",
+    "hexagonal",
+    "devkit",
+    "proto-api",
+    "go-work",
+    "atlas",
+    "nats",
+    "temporal"
+  ],
+  "agents": ["./agents/go-coder.md"],
+  "skills": "./skills"
+}

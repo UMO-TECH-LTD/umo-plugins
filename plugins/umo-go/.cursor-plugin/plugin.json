@@ -1,0 +1,28 @@
+{
+  "name": "umo-go",
+  "displayName": "UMO Go",
+  "version": "0.1.0",
+  "description": "UMO Go — always-on go-awareness rule, the go-coder agent, and the house Go skill set: hexagonal layout, Google Go style, Atlas migrations, devkit clients, Dockerfile rules, quality gates, and the go.work loop for unreleased platform modules.",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": [
+    "umo",
+    "umo-go",
+    "go",
+    "golang",
+    "go-coder",
+    "hexagonal",
+    "devkit",
+    "proto-api",
+    "go-work",
+    "atlas",
+    "nats",
+    "temporal"
+  ],
+  "license": "UNLICENSED",
+  "logo": "assets/umo.svg",
+  "rules": "rules",
+  "agents": "agents",
+  "skills": "skills"
+}

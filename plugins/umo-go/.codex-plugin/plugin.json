@@ -1,0 +1,41 @@
+{
+  "name": "umo-go",
+  "version": "0.1.0",
+  "description": "UMO Go — always-on go-awareness rule, the go-coder agent, and the bundled Go/platform skill set.",
+  "author": {
+    "name": "UMO Platform Team"
+  },
+  "keywords": [
+    "umo",
+    "umo-go",
+    "go",
+    "golang",
+    "go-coder",
+    "hexagonal",
+    "devkit",
+    "proto-api",
+    "go-work",
+    "atlas",
+    "nats",
+    "temporal"
+  ],
+  "license": "UNLICENSED",
+  "skills": "./skills/",
+  "agents": "./agents/",
+  "interface": {
+    "displayName": "UMO Go",
+    "shortDescription": "go-coder agent and the house Go skill set.",
+    "longDescription": "Ships an always-apply go-awareness rule, the go-coder implementation agent, and the Go skills UMO services are held to: hexagonal layering on devkit/common, Google Go style, Atlas migrations, devkit clients (NATS, FeatureScript, audit-log, remote config, Sentry, Pyroscope), Dockerfile security and Go-version sync, quality gates, and the go.work workflow for building against unreleased proto-api / devkit checkouts. Skip it when the task is not Go.",
+    "developerName": "UMO Platform Team",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read"],
+    "defaultPrompt": [
+      "If this task touches Go, route implementation through agents/go-coder.md and load the matching skill under skills/ before writing code.",
+      "Never commit a local-path replace for a platform module — use go.work per skills/go-local-module-dev/SKILL.md.",
+      "Run go fmt, golangci-lint, go build and go test (plus the GOWORK=off variants when a go.work is present) before reporting done."
+    ],
+    "brandColor": "#2E12FF",
+    "composerIcon": "./assets/umo.svg",
+    "logo": "./assets/umo.svg"
+  }
+}
