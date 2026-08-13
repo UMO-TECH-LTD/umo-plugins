@@ -48,6 +48,11 @@ paths = [
       '''sha256:[a-f0-9]{64}''',
       '''(?i)(commit|sha)[/=:][a-f0-9]{40}''',
       '''plugins/umo-[a-z0-9\-]+''',
+      # Skill paths quoted in prose and manifests, e.g.
+      # "skills/go-local-module-dev/SKILL.md" — path token, not a secret.
+      '''(?i)skills/[a-z0-9\-]+/SKILL''',
+      # Shell helper in scripts/validate-claude.sh — a function name, not a token.
+      '''check_yaml_frontmatter''',
     ]
     paths = [
       '''\.gitleaks\.toml''',

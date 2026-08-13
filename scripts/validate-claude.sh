@@ -60,11 +60,14 @@ for f in plugins/*/hooks/hooks.json; do
 done
 
 echo
-echo "== Skill & command frontmatter =="
+echo "== Skill, command & agent frontmatter =="
 for f in plugins/*/skills/*/SKILL.md; do
   [ -f "$f" ] && check_yaml_frontmatter "$f"
 done
 for f in plugins/*/commands/*.md; do
+  [ -f "$f" ] && check_yaml_frontmatter "$f"
+done
+for f in plugins/*/agents/*.md; do
   [ -f "$f" ] && check_yaml_frontmatter "$f"
 done
 

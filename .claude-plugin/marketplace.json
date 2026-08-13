@@ -78,6 +78,18 @@
       "license": "UNLICENSED",
       "category": "productivity",
       "keywords": ["umo", "llm-wiki", "confluence", "wiki", "knowledge", "adr", "read-only"]
+    },
+    {
+      "name": "umo-go",
+      "source": "./plugins/umo-go",
+      "description": "UMO Go \u2014 the go-coder agent, an always-on go-awareness rule, and the house Go skill set: hexagonal layout on devkit/common, Google Go style, Atlas migrations, devkit clients (NATS, FeatureScript, audit-log, remote config, Sentry, Pyroscope), Dockerfile security and Go-version sync, quality gates, and the go.work loop for building against unreleased proto-api / devkit modules.",
+      "version": "0.1.0",
+      "author": {
+        "name": "UMO Platform Team"
+      },
+      "license": "UNLICENSED",
+      "category": "productivity",
+      "keywords": ["umo", "umo-go", "go", "golang", "go-coder", "hexagonal", "devkit", "proto-api", "go-work", "atlas", "nats", "temporal"]
     }
   ]
 }

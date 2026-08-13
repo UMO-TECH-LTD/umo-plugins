@@ -36,6 +36,11 @@
       "name": "umo-llm-wiki",
       "source": "plugins/umo-llm-wiki",
       "description": "LLM Wiki — read-only Atlassian MCP and llm-wiki-ask skill for querying the UMO process library (LLM-MIRROR) in Confluence."
+    },
+    {
+      "name": "umo-go",
+      "source": "plugins/umo-go",
+      "description": "UMO Go — go-coder agent, always-on go-awareness rule, and the house Go skill set (hexagonal layout, Google Go style, Atlas migrations, devkit clients, Dockerfile rules, quality gates, go.work for unreleased platform modules)."
     }
   ]
 }

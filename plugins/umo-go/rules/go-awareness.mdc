@@ -1,0 +1,36 @@
+---
+description: Always-on Go awareness — orient agents toward the go-coder agent and the bundled Go/platform skills when work touches a UMO Go service.
+alwaysApply: true
+---
+
+# Go awareness
+
+This rule stays in context so Go guidance is **reachable without a glob match**.
+
+## When it matters
+
+If the task touches **Go source**, `go.mod` / `go.sum` / `go.work`, a Go service
+Dockerfile, an Atlas migration, or a devkit client (NATS, FeatureScript,
+audit-log, remote config, Sentry, Pyroscope), do this **before** improvising from
+generic tutorials or web search:
+
+1. Hand implementation work to the **`go-coder`** agent (`agents/go-coder.md`),
+   or follow its routing table yourself.
+2. Load the matching skill from **`skills/`** first — the house standard lives
+   there, not in your recollection of upstream docs.
+3. Follow repo-local steering (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`) where
+   it contradicts a skill, and say which one you followed.
+
+## Two things that are always true here
+
+- **Never commit a local-path `replace` for a platform module**
+  (`gitlab.com/umo-tech-ltd-group/platform/*`) in a service's `go.mod`. Use a
+  gitignored `go.work` — see `skills/go-local-module-dev/SKILL.md`.
+- **Never pin a pseudo-version** for a platform module. The Go proxy caches
+  tagged releases, so a pseudo-version resolves locally and fails in CI and in
+  the cluster.
+
+## When it does not apply
+
+If the current work is not Go-related, treat this as **background context only**
+— do not pull Go tooling, layering, or skills into an unrelated task.
