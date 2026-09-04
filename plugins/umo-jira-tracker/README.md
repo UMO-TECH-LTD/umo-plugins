@@ -180,6 +180,10 @@ Bead title format: `[PAY-1234] [IC-S2] <JIRA summary>` — the slice coordinate 
 
 Bead labels: `jira:PAY-1234`, `jira-type:task`, `jira-status:in-progress`, `jira-parent:PAY-1200`, `jira-flow:PAY-900` (derived by walking the parent chain), `jira-origin:bead` (only on beads promoted via push).
 
+### Non-JIRA bead label
+
+`gitlab-mr:<iid>` is not part of JIRA sync — it is set by `/umo-jira-tracker:mr` (Phase 6.5) to record the MR a bead produced, so a later bead that depends on this one can auto-discover its MR IID. See `commands/umo-jira-tracker:mr.md`.
+
 Pull also includes a **recently-closed window** (`sync.recentlyDoneWindow`, default `-14d`) so issues that reached Done, Closed or Retired while you were offline still trigger a local bead close — with a reason that preserves which terminal it was.
 
 ## Beads → JIRA mapping (push direction)

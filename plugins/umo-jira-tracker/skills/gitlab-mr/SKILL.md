@@ -106,6 +106,56 @@ glab mr view --web
 glab mr list --source-branch "$(git branch --show-current)"
 ```
 
+## Merge request dependencies (blocking MRs)
+
+Used by `/umo-jira-tracker:mr` Phase 6.5 to stop an MR being merged before
+another one it depends on. Per GitLab's docs, this requires **GitLab
+Premium/Ultimate** on the project holding the *dependent* MR (the one that
+would be blocked); the blocker MR can be in a project of any tier, and
+cross-project dependencies are supported (reference the other project's MR by
+its own project id and iid). The POST/GET calls below and the `id`-vs-`iid`
+behavior are verified against this org's instance; the tier/cross-project
+notes are as documented by GitLab, not independently re-verified here.
+
+**List existing dependencies:**
+
+```bash
+glab api "projects/{project-id}/merge_requests/{iid}/blocks"
+```
+
+**Add one** — the dependent MR must not merge before the blocking one:
+
+```bash
+glab api -X POST "projects/{project-id}/merge_requests/{iid}/blocks?blocking_merge_request_id={blocker-id}"
+```
+
+**`blocking_merge_request_id` is the blocker MR's numeric `id` field — not its
+`iid`.** Fetch it first:
+
+```bash
+glab api "projects/{project-id}/merge_requests/{blocker-iid}" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])"
+```
+
+Passing the `iid` where `id` is expected returns `403 Lacking permissions to the
+blocking merge request` — this reads like an access problem but is actually the
+wrong identifier shape; a real tier/permission 403 happens even after
+correcting to `id`.
+
+**Remove one:**
+
+```bash
+glab api -X DELETE "projects/{project-id}/merge_requests/{iid}/blocks/{block-id}"
+```
+
+`{block-id}` is the id of the block relation itself, from the `blocks` list
+response above (not either MR's id).
+
+Limits (per GitLab's docs, not independently re-verified): up to 10 direct
+blockers per MR, and up to 10 MRs it can in turn block; nested/indirect chains
+are supported, so a direct dependency on the immediately preceding MR in a
+chain is enough — no need to also link every earlier link transitively.
+
 ## Troubleshooting
 
 | Issue | What to try |
