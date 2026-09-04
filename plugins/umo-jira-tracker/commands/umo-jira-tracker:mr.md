@@ -60,6 +60,7 @@ Extract the following from the user's free-form input. Ask only when a value is 
 | **JIRA key** | Regex `[A-Z]+-\d+` in input (e.g. `PAY-1234`) | Candidate from active bead (step 1a) |
 | **Branch strategy** | Explicit keywords: "current branch", "new branch", "rename branch"; otherwise | **Auto** (Phase 2 heuristic) |
 | **Target branch** | Keywords: "target dev", "target main", "into develop" | `dev` (from `.umo/jira-tracker.json` `gitlab.targetBranch`) |
+| **MR dependency** | Phrases like "depends on !1234", "after !1234 merges", "blocked by !1234" | None — see Phase 6.5 |
 | **Additional context** | Anything else the developer wrote | None |
 
 **JIRA key reconciliation rules:**
@@ -392,6 +393,136 @@ On success, print the MR URL (`glab mr view` or the command output).
 ### Without GitLab MCP or glab
 
 Output the MR title and description as a copyable markdown block so the developer can create the MR manually in the GitLab UI.
+
+## Phase 6.5: Set Merge-Request Dependencies (if this MR must not merge before another)
+
+Some changes ship as several MRs — often across several services — that must merge
+in a specific order (a schema-then-consumer chain, a producer-before-reader
+migration). GitLab can enforce that order directly: a merge request with a
+**blocking merge request dependency** cannot be merged until its blocker merges.
+Set this whenever an order actually matters — do not ask on every MR.
+
+**Skip dependency detection (Steps 6.5a-6.5c) — no questions, no API calls —
+when** Step 6.5a finds nothing explicit or bd-labeled, and Step 6.5b's diff is
+single-unit (see below). Most MRs are independent; the point is to catch the
+risky multi-service case, not to interrogate every MR. Step 6.5d is not part
+of this skip — it runs independently (see below) so that even an MR with no
+blockers of its own becomes discoverable by whatever depends on it later.
+
+### Step 6.5a — Collect dependency candidates, in priority order
+
+Stop at the first level that produces a result — do not also check lower
+levels once one has answered:
+
+1. **Explicit (works with no bead and no JIRA linkage — always take this
+   first)**: the developer's/orchestrator's own input to *this* invocation
+   named a blocker (see the **MR dependency** row in Phase 1b, e.g. "depends
+   on !1234", "after !1234 merges"). Extract the referenced IID(s), treat them
+   as confirmed, and skip straight to Step 6.5c — do not run 6.5a.2, 6.5a.3, or
+   the 6.5b nudge.
+2. **Bead blocker labels** (only when Phase 1a found an active bead): run
+   `bd show <bead-id> --json` and take its still-open "blocked by"
+   dependencies. For each blocker bead, check whether it already carries a
+   `gitlab-mr:<iid>` label (`bd show <blocker-id> --json`) — the label a
+   previous run of this command left on it in Step 6.5d. A label names that
+   blocker's MR IID. Found labels are confirmed; skip the 6.5b nudge.
+3. **JIRA delivery history** (only when neither of the above found anything,
+   and the Atlassian MCP is available): re-read the JIRA Task description
+   fetched in Phase 3 for prior "MR delivery" entries this command appended in
+   earlier runs (Phase 7, Operation C). Collect any MR references found there
+   as **candidates** only — never apply them without confirmation in 6.5b (if
+   6.5b does not run — single-unit diff — these candidates are simply
+   dropped; sharing a JIRA key does not by itself imply merge order, so do not
+   apply them any other way).
+
+### Step 6.5b — the multi-service nudge
+
+If Step 6.5a found nothing confirmed, check whether the diff spans more than
+one **unit** — a top-level repo directory that contains changed source,
+ignoring root-level files with no directory and conventionally non-code dirs
+(`docs/`, `.github/`, etc.) — except that in a monorepo where everything lives
+under one shared root (e.g. `saas`'s `services/`), the unit is the first two
+path segments (`services/<name>`) instead of just the root:
+
+```bash
+git diff {target-branch}..HEAD --name-only
+```
+
+If it spans more than one unit, ask once, before applying anything:
+
+```
+This MR touches N services ({list}). Does it depend on another MR that must merge
+first? If so, give me its !iid so I can set a GitLab merge request dependency.
+```
+
+If Step 6.5a.3 produced JIRA-history candidates, list them in this same
+question instead of asking blind. A single-unit diff with nothing confirmed in
+6.5a skips this question entirely.
+
+No answer, or the developer says there is no dependency → proceed with none,
+skip Step 6.5c and 6.5d.
+
+### Step 6.5c — apply
+
+The MR from Phase 6 already exists (this phase runs after it). For each
+confirmed blocking IID:
+
+1. Resolve the **blocker's** global `id` (not its `iid` — the dependent side of
+   the relation is addressed by `iid` in the URL path, so only the blocker's
+   `id` is needed):
+
+   ```bash
+   glab api "projects/{project-id}/merge_requests/{blocker-iid}" \
+     | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])"
+   ```
+
+2. Create the block relation (the new MR is blocked by the other), addressing
+   the new MR by its own `iid` in the path:
+
+   ```bash
+   glab api -X POST "projects/{project-id}/merge_requests/{new-iid}/blocks?blocking_merge_request_id={blocker-global-id}"
+   ```
+
+   **`blocking_merge_request_id` takes the blocker's numeric `id` field, not
+   its `iid`.** Passing the `iid` returns a misleading `403 Lacking
+   permissions to the blocking merge request` even when you have full access —
+   that 403 means "wrong id shape", not "no permission". See the `gitlab-mr`
+   skill's dependency reference for tier requirements and cross-project
+   behavior; a genuine tier-related 403 means the project can't create this
+   relation at all — say so plainly and stop, do not silently skip. Same if
+   `glab` is unavailable: report the intended dependency (`!{new-iid} should
+   be blocked by !{blocker-iid}`) and stop — do not silently drop it, since
+   GitLab MCP has no equivalent tool for this relation today.
+   Manual fallback in either case: ask the developer to set the dependency by
+   hand and mark the MR **Draft** themselves (this command never toggles
+   Draft) — see the convention this mirrors in
+   `repos/saas/.cursor/skills/compliance-skills/implement-loop/reference/risky-changes.md`
+   (path relative to the `sdlc-control-plane` meta-repo root; describe the
+   same convention inline if working outside that checkout). That convention
+   pairs Draft with the same GitLab dependency this step sets — Draft is what
+   the developer adds on top, not a substitute for it.
+
+3. Report each dependency set plainly: `!{new-iid} now blocked by
+   !{blocker-iid} — GitLab will refuse to merge it first.`
+
+See the `gitlab-mr` skill's dependency reference for the read-back call
+(`GET .../blocks`) and its limits.
+
+### Step 6.5d — record for future dependents
+
+Runs unconditionally whenever an MR was created in Phase 6 and a bead is
+active in Phase 1a — regardless of whether 6.5a-6.5c found or set any
+dependency. A first-in-chain MR has no blockers of its own, but it still needs
+to be discoverable once something else depends on *it*; skip this step and
+that discovery never happens. Label the active bead:
+
+```bash
+bd label add <bead-id> gitlab-mr:{new-iid}
+```
+
+No active bead → nothing to record here; the JIRA "MR delivery" trail this
+command already writes in Phase 7 is the fallback record the next run's Step
+6.5a.3 will read.
 
 ## Phase 7: JIRA Update (requires approval)
 
