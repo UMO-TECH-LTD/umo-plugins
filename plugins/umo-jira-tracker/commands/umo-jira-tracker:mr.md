@@ -1,5 +1,5 @@
 ---
-description: End-to-end MR workflow — parse intent, auto-choose branch via protected + open-MR heuristic, commit changes, push and create a GitLab MR immediately, and sync JIRA. Uses glab (preferred) or GitLab MCP. The JIRA Task key is mandatory in both the branch and the MR title. Ported from the UMO saas repo /mr workflow.
+description: End-to-end MR workflow — parse intent, auto-choose branch via protected + open-MR heuristic, commit changes, push and create a GitLab MR immediately, sync JIRA, then offer to watch CI and the review agent and fix valid findings until both are clean (Phase 8, opt-in per MR) before reporting the command done. Uses glab (preferred) or GitLab MCP. The JIRA Task key is mandatory in both the branch and the MR title. Ported from the UMO saas repo /mr workflow.
 ---
 
 # /umo-jira-tracker:mr
@@ -36,6 +36,8 @@ For MR creation internals (glab flags, GitLab MCP call), use the `gitlab-mr` ski
 ## Overview
 
 End-to-end MR workflow: parse intent from natural language, manage branches, organize changes into logical conventional commits, **push and create a GitLab MR immediately**, and sync JIRA. Do **not** wait for a commit-plan or MR-preview approval — the developer's request is the approval. JIRA mutations still require explicit approval (Phase 7).
+
+**MR creation need not be the finish line.** After the MR is opened this command *offers* to keep going — see **Phase 8**, which is opt-in per MR while it is still being validated. If the developer accepts, it watches the pipeline and the review agent, fixes what is genuinely wrong, and only reports the task complete once the latest pipeline is green and the review agent has no unresolved comments left (or the iteration/time budget in Phase 8 runs out first, in which case it hands off with a status report instead of claiming done). If they decline, the command ends at the created MR and says so.
 
 ## Phase 1: Parse Input and Clarify
 
@@ -548,6 +550,600 @@ Delegate to the `jira-sync-back` skill `/mr` complete flow, which performs:
 Both previews are shown together before any action. Developer can approve both, approve individually, or skip either.
 
 If the developer declines the JIRA update entirely, skip it.
+
+## Phase 8: Wait for Review & CI, Converge
+
+**Phase 8 is opt-in — ask first (Step 8·ask), and run it only on a clear yes.**
+Once the developer has opted in, the command is not finished when Phase 6
+created the MR: do not report
+this task complete, and do not hand control back to the developer as "done",
+until Step 8e's convergence condition holds — or Step 8d fires first (budget
+exhausted, or the loop hits a state no further push can resolve), which ends
+the command in a reported handoff instead of a claimed completion. This is a
+change from Phases 1–7: those run once; Phase 8 is a poll-fix-repeat loop.
+
+**What "done" means here** — both, true at the same time, on the current HEAD:
+
+1. The MR's latest pipeline is green, or gate-less per Step 8b (no failed
+   required jobs, and not merely absent because it hasn't been created yet).
+2. The review agent (the bot that self-assigns itself as reviewer on the MR,
+   per this org's MR-approval procedure — `engineering/ship/code-review.md` in
+   the `sdlc-control-plane` meta-repo, or the equivalent doc in whatever repo
+   this MR lives in) has left **zero unresolved discussion threads**.
+
+This loop only fills the automated half of `MR-APPROVALS`. It never waits for
+or substitutes the **human** Approve slot — that stays a person's job. Do not
+merge the MR from this command.
+
+### Step 8·ask — Offer Phase 8 (run this before Step 8·0)
+
+Phase 8 is new and still being validated in real use, so it does not start on
+its own. Ask the developer, in conversation, and wait for the answer:
+
+```
+MR is up: {MR_URL}
+
+I can keep going from here: watch the pipeline and the review agent, fix what
+is genuinely wrong, and only call this done once CI is green and the review
+agent has no unresolved threads (Phase 8 — up to 6 fix pushes, 45 minutes,
+checking every 3 minutes). Or I stop here and you take CI and review yourself.
+
+Phase 8 is new, so it's opt-in for now. Enable it for this MR?
+```
+
+- **Clear yes** → go to Step 8·0 and continue exactly as documented.
+- **No, or anything that isn't a clear yes** — "not now", "later", a question,
+  a change of subject, silence, an answer you are not sure about → **skip
+  Phase 8 entirely.** Do not run Step 8·0's tooling check, do not poll once
+  "just to see", do not re-ask. Report as in Step 8·skip and end the command.
+
+Never assume yes. This is the one gate in the command where a non-answer means
+no: the rest of `/umo-jira-tracker:mr` treats the developer's original request
+as its approval, but that request predates this offer and cannot consent to a
+45-minute loop that pushes code on their behalf.
+
+Ask once. If the developer opts out here and then asks for CI watching later
+in the same session, that request *is* the yes — start at Step 8·0.
+
+### Step 8·skip — Developer declined Phase 8
+
+Report this and end the command. Same shape as the no-tooling path in Step 8·0
+below, with the reason changed:
+
+- The MR **was created successfully** in Phase 6 — repeat its web URL. That
+  part of this command's job is done, and Phases 1–7 succeeded as reported.
+- Phase 8 monitoring was **skipped at the developer's request** — not because
+  tooling was missing, and not because anything failed.
+- They watch CI and the review agent themselves in the GitLab UI, and the
+  human Approve slot of `MR-APPROVALS` is outstanding as always.
+- Re-running `/umo-jira-tracker:mr` is not how to start it later — just ask.
+
+This is a normal, successful outcome of the command. Do not present it as a
+failure, a degradation, or a warning, and do not editorialise about the
+developer's choice.
+
+### Step 8·0 — Tooling gate (run this before Step 8a)
+
+Only reached once the developer has opted in at Step 8·ask. Phase 8 needs a
+working GitLab client — check once, up front:
+
+```bash
+command -v glab >/dev/null 2>&1 && glab auth status
+```
+
+- **`glab` present and authenticated** → use the `glab` commands in 8b/8c.
+- **`glab` missing or unauthenticated, but GitLab MCP is available** → use the
+  MCP calls in `references/mcp.md` for every poll in this phase instead.
+- **Neither** → Phase 8 cannot run. Do **not** error out, hang, or retry.
+  Report the following and end the command there:
+  - The MR **was created successfully** in Phase 6 — repeat its web URL. That
+    part of this command's job is done.
+  - Phase 8's automated CI/review monitoring cannot run, because no GitLab
+    tooling is available (`glab` not installed or not authenticated, GitLab
+    MCP not configured).
+  - The developer needs to watch CI and the review agent manually in the
+    GitLab UI, and the human Approve slot of `MR-APPROVALS` is outstanding as
+    always.
+  - How to enable this next time: `glab auth login` or set `GITLAB_TOKEN`
+    (see the `gitlab-mr` skill → `references/glab.md`), or configure GitLab
+    MCP (`references/mcp.md`).
+
+This is an expected degradation path, not a crash: Phases 1–7 succeeded and
+are reported as such.
+
+### Step 8a — Set a budget
+
+The budget is **6 fix→push iterations, 45 minutes (2700s) of wall-clock time,
+or 40 total polls — whichever comes first.** An "iteration" is one push of a
+code fix in response to something found in 8b or 8c; pure re-polls with no
+push don't count as an iteration, but the wall-clock and poll-count limbs keep
+running through them regardless. Every check in 8b or 8c is a poll, pushed or
+not. Hitting any limb routes to Step 8d, not to a silent retry.
+
+<!-- These three numbers are also hard-coded as MAX_ITERATIONS / MAX_SECONDS /
+MAX_POLLS in skills/gitlab-mr/scripts/phase8-budget.sh, which carries a
+matching comment pointing back at this section. Change one, change the other. -->
+
+**Preferred: let `phase8-budget.sh` keep the count.** It ships with this
+plugin at `skills/gitlab-mr/scripts/phase8-budget.sh`. Locate it once:
+
+```bash
+# 1. If the host exports a plugin root, it's under there:
+ls "$CLAUDE_PLUGIN_ROOT/skills/gitlab-mr/scripts/phase8-budget.sh"
+# 2. Otherwise: it ships alongside this command inside the same plugin, so use
+#    the plugin/skill directory you loaded this command and the gitlab-mr skill
+#    from — <plugin-root>/skills/gitlab-mr/scripts/phase8-budget.sh — or find
+#    it by name in your plugin/skill file listing.
+```
+
+`$CLAUDE_PLUGIN_ROOT` is set for *hook* invocations and is not guaranteed for
+ad-hoc Bash calls made while executing a skill, so treat method 1 as a
+shortcut, not a requirement.
+
+Call the resolved path `{budget}`, and use `{project-id}-{iid}` (both already
+resolved in Phase 6) as `{key}` — the script sanitizes the key to
+`[A-Za-z0-9._-]`, so a path-style project id works too; just use the *same*
+key for every call in this run:
+
+```bash
+sh {budget} reset     {project-id}-{iid}   # FIRST, once — see below
+sh {budget} poll      {project-id}-{iid}   # every 8b/8c check, pushed or not
+sh {budget} iteration {project-id}-{iid}   # BEFORE pushing a fix — the gate
+sh {budget} status    {project-id}-{iid}   # read-only; 8d/8e report + time split
+```
+
+**Call `reset` once, unconditionally, here — before the first `poll`.** The
+key is deterministic and the state file outlives the command (days on macOS,
+until reboot on Linux), so a *previous* run of `/umo-jira-tracker:mr` on this
+same MR would otherwise leave a state file whose clock is long expired, and
+your very first `poll` would report `BUDGET EXCEEDED: wall-clock` and send
+Phase 8 straight to a false handoff without ever monitoring this run's CI or
+review. Phase 8 is one bounded run per invocation, so always start it clean —
+do not try to distinguish "resuming" from "starting fresh".
+
+Exit codes: **`0`** = within budget, carry on. **`1`** = `BUDGET EXCEEDED` →
+go to Step 8d now. **`2`** = you called the script wrong (bad or missing
+argument) — fix the call; this is *not* budget exhaustion, and it is not a
+reason to skip the gate. **`3`** = the script's *environment* is broken (its
+state directory or lock is unusable, e.g. an unwritable `$TMPDIR`) — neither
+usage nor budget: treat it exactly like "the script cannot be located" and use
+the manual fallback below. Echo the line each call prints (e.g. `poll
+7/40 | elapsed 1200s/2700s | iterations 1/6 | OK`) so the developer can see the
+count.
+
+**Never narrate elapsed time from a `poll` line alone.** `poll 10/40 | elapsed
+2520s/2700s` invites the reading "polling has eaten 42 of my 45 minutes",
+which is almost always false: the clock also covers reading job logs, editing
+the ticket, waiting on a developer's answer and pushing fixes — during all of
+which the poll counter does not move. `status` is the subcommand that
+separates them:
+
+```
+status | poll 10/40 | elapsed 2520s/2700s | polling 1440s | remediation 900s | since-last 180s | iterations 2/6 | OK
+```
+
+`polling` is the loop's own sleep-and-check gaps (≤360s each — one 180s sleep
+plus overhead), `remediation` is the long gaps where you were off doing
+something else, `since-last` is the stretch after your last counted call. So
+that line says: 24 minutes in the loop's own sleeps, 15 fixing things, 3 since
+the last check. Whenever you tell the developer how much of the budget is
+gone — mid-loop or in the 8d/8e report — take the numbers from `status`, not
+from a `poll` line, and give them the split. It is report-only: no limb of the
+budget is measured against these counters.
+
+At a flat 180s per poll the clock, not the poll count, is what runs out: 2700s
+allows about **15 polls**, so expect to reach Step 8d somewhere around
+`poll 15/40`. Seeing `poll 15/40` next to an exhausted clock is normal and
+does not mean you under-polled — `MAX_POLLS=40` is a backstop for a loop that
+skips its `sleep`, not a target to reach.
+
+State lives in `${TMPDIR:-/tmp}/umo-phase8/`, one file per MR key, outside the
+git tree. Because it is keyed per MR, concurrent Phase 8 runs on **different**
+MRs on the same machine never interfere. Mutations on the same key are
+serialized by an advisory lock, so two sessions on the same MR cannot corrupt
+each other's counters or lose an increment — but note that two sessions on the
+*same* MR is not a supported configuration: whichever one reaches Step 8a last
+resets the shared budget. Both remain bounded; the counts just won't mean what
+a single run's would. If the lock itself is unusable the script exits `3`, and
+you fall back to manual bookkeeping — it never proceeds unsynchronized.
+
+`iteration` refuses with exit 1 *without* incrementing when the iteration cap
+is already reached or the clock is already blown, so the counter can never
+overshoot 6. Reaching exactly 6 is allowed and still leaves polling open — the
+6th fix's pipeline and review pass still get verified; only a *7th* fix is
+refused.
+
+**Fallback if the script cannot be located or run** (any reason at all — the
+deployment's plugin layout doesn't resolve to a path you can find, no shell
+available, or it exits `3`): this is not fatal. Fall back to manual
+bookkeeping — capture the
+current epoch time (`date +%s`) as `{start-time}` before the first poll, then
+check `date +%s` against `{start-time}` on every poll, not only after a push,
+and keep the iteration and poll counts yourself. Say out loud which poll
+number you're on each time (e.g. "poll 7/40"). On this path nothing enforces
+the wall clock except you actually calling `date +%s` and comparing it
+correctly every time; the poll count is the backstop, since it stays accurate
+just by counting your own tool calls in this phase. Hitting 40 polls routes to
+Step 8d exactly like hitting the iteration or time limit.
+
+**This is not a one-time check.** Do not treat this budget as background
+context to remember — re-check it at every single point in 8b and 8c that is
+about to start a new iteration or take another poll, *before* acting, not
+after: one `poll` call per check, one `iteration` call before every fix push
+(or the equivalent manual check on the fallback path). Both 8b and 8c below
+carry an explicit "check 8a first" reminder at
+each such point for exactly this reason: each individual fix along the way
+will look worth doing in isolation (that's what makes this loop attractive to
+keep running), so the gate has to be checked proactively before committing to
+iteration N+1 or the next poll, not discovered retroactively after already
+doing it.
+
+### Step 8b — Poll the pipeline
+
+**The poll interval is a flat 180 seconds.** Between every two checks in 8b
+and 8c, without exception.
+
+No shorter first interval, no backoff, no adaptive tightening when something
+looks nearly done — a fixed three minutes, every cycle. CI in this org is slow
+enough that a faster cadence just wakes you up to read the same `running` you
+read last time, burning wall clock and poll count on nothing.
+
+<a id="poll-wait"></a>
+**How to actually wait.** Run the wait as a single one-shot **backgrounded**
+sleep — on Claude Code, the Bash tool with `run_in_background: true` (on
+Cursor, the terminal-command tool's `is_background: true` does the same):
+
+```bash
+sleep 180
+```
+
+A backgrounded call returns immediately — that is not the wait finishing.
+**Do not run the next `poll`, or any other Phase 8 tool call, until the
+completion notification for that `sleep` actually arrives.** Returning to work
+on the same turn spends none of the interval and puts your next poll seconds
+after the last one, which is the failure this whole section exists to prevent.
+
+Two things will not work, and one of them is a trap:
+
+- **Do not foreground it.** On Claude Code a long leading `sleep` is blocked
+  outright by the Bash tool: `sleep 180` on its own, without
+  `run_in_background`, does not run — so a wait you *believe* happened did
+  not.
+- **Do not chain shorter sleeps** to add up to 180s once the foreground call
+  is refused. That is the obvious improvisation and it is explicitly a banned
+  workaround, not a fix. A blocked `sleep` is never permission to poll faster,
+  and "the sleep wouldn't run" is not a reason the cadence changed.
+
+On any other host, if a one-shot backgrounded wait isn't available, use that
+host's equivalent wait mechanism: the requirement is a fixed 180 seconds of
+*not polling*, in one wait, not the `sleep` builtin specifically.
+
+This is the only interval in Phase 8. Everywhere below that says "wait one
+poll interval", "check again", or "re-poll", it means exactly this — 180
+seconds, waited the way described just above.
+
+See `gitlab-mr` skill → `references/glab.md` / `references/mcp.md` for the
+exact calls, including the fallbacks. Every check here is a poll — run
+`sh {budget} poll {project-id}-{iid}` (Step 8a) first, and stop for Step 8d if
+it exits 1. Primary command:
+
+```bash
+glab ci status --branch "$(git branch --show-current)" --output json --jq '.pipeline.status'
+```
+
+`glab` embeds its own jq engine, so `--jq` needs **no** external `jq` or
+`python3`. The JSON is `{"jobs": [...], "pipeline": {...}}` — the pipeline
+status is `.pipeline.status`, its id `.pipeline.id`. Never combine
+`--output json` with `--live`, `--wait`, or `--compact`; they are documented as
+incompatible (and `--live`/`--wait` would block this loop anyway).
+
+When no pipeline exists, `glab ci status` exits non-zero and prints
+`{"error":{"message":"no pipeline found for branch ..."}}` — treat that as
+`none` below, not as a tooling failure.
+
+Fallback (older `glab` without `ci status --jq`, or a status that disagrees
+with the MR page because this project uses merge-request/merged-results
+pipelines rather than branch pipelines): the raw
+`glab api "projects/{project-id}/merge_requests/{iid}/pipelines"` path in
+`references/glab.md`. Or with GitLab MCP: `get_merge_request` with
+`include: ["pipelines"]` (`url` or `project_id` + `merge_request_iid`).
+
+- **No pipeline at all** (`none`) — the **no-CI-configured check**, distinct
+  from 8c's review-freshness check below (don't conflate the two): if you
+  have just pushed (Phase 6's initial push, or any Phase 8 fix push), GitLab
+  may not have created the new pipeline yet — treat this the same as "still
+  running" below and re-poll, do **not** jump straight to 8c off a single
+  `none`. Only once you've confirmed `none` on at least two polls, spaced one
+  full poll interval (180s) apart, with no intervening push, is it safe to
+  conclude this MR genuinely has no CI pipeline configured — then go to 8c.
+- **`skipped`**: this MR has no CI gate to wait on — go straight to Step 8c.
+- **Still running** (`pending`/`running`/`created`/`waiting_for_resource`/
+  `preparing`/`scheduled`): wait one poll interval (180s, backgrounded — see
+  [how to wait](#poll-wait) above) and check again. Does not count as an
+  iteration, but the wall-clock and poll-count limbs of Step 8a's budget do
+  **not** pause for
+  this — run `sh {budget} poll {project-id}-{iid}` (or, on the manual
+  fallback path, check `date +%s` against `{start-time}` and your poll count)
+  on every single re-check here, the same as the "review agent hasn't posted"
+  branch in 8c. A pipeline that never leaves this state (stuck queued, e.g.
+  `waiting_for_resource`) is exactly the case those limbs exist to catch —
+  once either is hit, stop and go to Step 8d, do not keep waiting for it to
+  resolve on its own.
+- **`success`**: move to Step 8c.
+- **`failed`**: fetch the failing job(s) and their logs — the same
+  `glab ci status` call already carries the job list, so this needs no extra
+  JSON tooling either:
+
+  ```bash
+  glab ci status --branch "$(git branch --show-current)" --output json \
+    --jq '.jobs[] | select(.status == "failed") | "\(.id) \(.name) \(.stage)"'
+  glab ci trace {job-id-or-name}          # accepts an id or a job name
+  ```
+
+  Fallback (older `glab`): `glab api "projects/{project-id}/pipelines/{pipeline-id}/jobs?scope[]=failed"`.
+  Or with MCP: `get_pipeline` (`include: ["jobs"]`, `job_status: "failed"`)
+  then `get_job` (`include: ["log"]`) per failing job.
+
+  **Before diagnosing or fixing anything: check Step 8a's budget first** — run
+  `sh {budget} iteration {project-id}-{iid}` (or the manual check) *now*, and
+  if it exits 1, do not start this fix — go to Step 8d instead, even though
+  this specific failure looks fixable. Only once it exits 0 (budget remains,
+  and this fix is now counted): diagnose the root cause (don't guess — read the actual
+  failure), fix it in code, commit, push. That `iteration` call already
+  recorded this as one Step 8a iteration — don't call it again for the same
+  push. A fresh pipeline starts automatically on push — loop back to the top
+  of 8b. Only re-run without a code change when the failure is a verified
+  infra flake (say so explicitly when you do this; it still counts as an
+  iteration, so it still goes through the `iteration` gate first).
+- **`canceled`**: GitLab auto-cancels a pipeline superseded by a newer push —
+  so right after one of your own Step 8a fix pushes, the pipeline you land on
+  may just be the stale, now-superseded run, not the current one. Re-poll
+  once, one poll interval later (180s, backgrounded — see
+  [how to wait](#poll-wait)), for the pipeline on the current
+  HEAD before concluding anything. If a fresh pipeline for the current HEAD exists,
+  follow **its** status instead — this was never really "canceled" from this
+  loop's point of view. Only if `canceled` is still the latest pipeline after
+  that one re-poll: this is not something a fix can resolve by pushing — go
+  straight to Step 8d and report it, regardless of remaining budget. (Step
+  8d's trigger below covers this: budget exhaustion is one way in, "nothing
+  left to push at" is the other.)
+
+### Step 8c — Poll review-agent discussions
+
+Only once the pipeline is green or gate-less (8b). Every listing here is a
+poll — run `sh {budget} poll {project-id}-{iid}` (Step 8a) first and stop for
+Step 8d if it exits 1.
+
+**First, once per Phase 8 run: identify the review agent.** You cannot apply
+the human-comment exclusion without knowing which author is the bot. The
+review agent self-assigns itself as a *reviewer* on the MR per
+`code-review.md`, so read the MR's reviewer list:
+
+```bash
+glab mr view {iid} --output json --jq '.reviewers[].username'
+```
+
+Call that set `{agent-usernames}`. A comment author in that set is the review
+agent; **any other author is a human**. If `.umo/jira-tracker.json` declares a
+known bot account, prefer that name; otherwise use this reviewers-list
+heuristic. If the list is empty (the agent hasn't self-assigned yet), that is
+the "review agent hasn't posted anything yet" branch below — do not guess a
+username, and do not treat unknown authors as the bot.
+
+Then list the threads:
+
+```bash
+glab mr note list {iid} --state unresolved --output json \
+  --jq '.[]
+        | select(any(.notes[]; .system == false))
+        | . as $d
+        | [$d.notes[] | select(.system == false)] as $n
+        | ($n | max_by(.created_at)) as $newest
+        | ([$n[] | .position | select(. != null)] | first) as $pos
+        | "id=\($d.id)"
+          + " | authors=\([$n[] | .author.username] | unique | join(","))"
+          + " | newest=\($newest.created_at)"
+          + " | unresolved=\(any($d.notes[]; .resolvable and (.resolved == false)))"
+          + " | \($pos.new_path // "general"):\($pos.new_line // "-")"
+          + " | \($newest.body)"'
+```
+
+This projects the **whole `notes[]` array**, not `notes[0]`, and that is
+load-bearing — do not simplify it back:
+
+- `authors=` lists *every* non-system author on the thread, so a human who
+  replied on a thread the review agent started is visible. `notes[0]` alone
+  would hide them and the loop could act on a thread a human is in.
+- `newest=` is `max_by(.created_at)`, which is what the review-freshness
+  check needs — the thread's *latest* note, not the one that opened it. It is
+  computed by timestamp rather than array position, so it does not depend on
+  GitLab's notes ordering either way.
+- `unresolved=` is `any(.notes[]; .resolvable and (.resolved == false))` —
+  exactly the rule stated below, evaluated over all notes.
+- `id=` is the **full** discussion id, which is what to pass to `--reply` and
+  `resolve`. Show its first 8 characters to the developer if you like, but
+  send the full id programmatically: a prefix can be ambiguous and errors.
+
+To read a whole thread's exchange before judging it, fetch just that thread's
+notes: `glab mr note list {iid} --output json --jq '.[] | select(.id == "{id}") | .notes'`.
+
+> `glab mr note` is **experimental**: glab itself states "This feature is an
+> experiment and is not ready for production use. It might be unstable or
+> removed at any time." If it errors or is missing, drop to the
+> `glab api .../discussions` fallback below — that path is not experimental.
+
+Human-readable mode (`glab mr note list {iid} --state unresolved`, no
+`--output json`) prints an **8-character discussion-id prefix** per non-system
+thread — fine for showing a developer, but prefer the full `id` from JSON for
+`--reply`/`resolve`. It also supports `--type`
+(`all`/`general`/`diff`/`system`) and `--file <path>` filters — but `--type`
+takes a single value, so it cannot exclude system notes on its own; that's
+what the `select(any(.notes[]; .system == false))` above is for.
+
+Fallback (non-experimental) — **`--paginate` is mandatory here**: GitLab
+returns 20 items per page, and an MR accumulates a system note per push, so
+real unresolved review threads fall off page 1 on a longer run and the loop
+would see "zero unresolved threads" and converge falsely at Step 8e.
+
+```bash
+glab api --paginate "projects/{project-id}/merge_requests/{iid}/discussions"
+```
+
+`glab api` has **no** `--jq` flag, so this fallback needs an external `jq` or
+`python3` to filter — unlike the native path above, which needs neither. With
+`--paginate` it emits one JSON array per page, so slurp them
+(`jq -s 'add | ...'`). Or with GitLab MCP: `get_merge_request` with
+`include: ["discussions"]`.
+
+The resolution rule is unchanged whichever path you use, and the JSON keeps
+the same shape on both: each discussion holds a `notes` array; a note carries
+`author`, `resolvable`, and `resolved` — the discussion itself has neither
+field, so treat a discussion as unresolved when any of its resolvable notes
+has `resolved: false`. `--state unresolved` is a convenience filter over that
+rule, not a replacement for it; the per-note `resolvable`/`resolved` values
+are in the output above so you can verify rather than trust the flag.
+
+**After any push in this phase (from 8b or 8c), the review agent needs time to
+re-review the new HEAD** — the **review-freshness check**, distinct from 8b's
+no-CI-configured check above. A discussion list with zero unresolved threads
+immediately after a push may just mean the agent hasn't looked at the new
+commit yet, not that it approved it. Before treating that as convergence,
+confirm at least one of: the review agent has posted a note whose timestamp is
+after the push (that's the `newest=` field above — the thread's latest note,
+not its first), its overall Approve/verdict reflects the current HEAD SHA, or
+one bounded re-poll (one poll interval later) still shows nothing new — in the
+last case, note that explicitly in the eventual report rather than silently
+assuming approval.
+
+For this check, and for telling "the agent has never posted" apart from "the
+agent posted and everything is already resolved", run the same listing with
+`--state all` instead of `--state unresolved` — the agent's newest note (the
+one whose timestamp you need) may well sit on a thread that is already
+resolved, which the unresolved filter hides. Same for the raw-API fallback:
+`.../discussions` returns every thread, so filter it yourself.
+
+- **Review agent hasn't posted anything yet**: it self-assigns on MR creation
+  per `code-review.md` — wait one poll interval (180s, backgrounded — see
+  [how to wait](#poll-wait)) and re-check. **This branch never pushes
+  anything, so the iteration counter stays at 0 for as long as
+  you sit here — the wall-clock and poll-count limbs of Step 8a's budget are
+  the only things that can end this loop.** Run
+  `sh {budget} poll {project-id}-{iid}` (or, on the manual fallback path,
+  check `date +%s` against `{start-time}` **and** your poll count) on every
+  single re-check here — same as the "still running" branch in 8b — not just
+  when it "feels" like a while
+  has passed. Once either limit is hit, stop regardless of the iteration
+  count and go to Step 8d — that's the tooling incident `code-review.md`
+  describes; say so in the report rather than waiting forever on a bot that
+  isn't coming.
+- **A human posted a comment**: do not touch it. This loop only acts on the
+  review agent's own threads — never auto-reply to or resolve a human's
+  comment. Use the `authors=` field from the listing above: if **any** author
+  on the thread is outside `{agent-usernames}`, a human is participating in
+  it, even when the review agent opened it — leave the whole thread alone.
+  Note it in the status report (Step 8d/8e) and let the developer
+  handle it.
+- **A thread you already fixed-and-resolved has come back** (reopened, or a
+  new discussion on the same file/line asserting the same defect you already
+  replied to and resolved earlier in this run — a different comment on the
+  same file/line is a new finding, judge it normally below): do not just fix
+  it again as if new — that's a tooling anomaly (the review agent
+  re-flagging something already addressed), not a genuine new finding.
+  Finish this poll's pass over the remaining threads (still-new ones get
+  judged normally, per the bullet below), but once that pass is done, do not
+  start another fix→push iteration — go straight to Step 8d and report the
+  reopened thread there. A reopen means this loop cannot make further
+  progress here regardless of remaining budget.
+- **Unresolved thread from the review agent** (first time seeing this
+  specific finding): read the actual diff/code the comment refers to and
+  judge it on its merits — is this a real, in-scope defect (correctness,
+  security, a contract it breaks, a standard or ADR it violates), or a false
+  positive / stylistic opinion / suggestion outside this MR's scope?
+  - **Valid** → **before doing anything else, check Step 8a's budget** — run
+    `sh {budget} iteration {project-id}-{iid}` (or the manual check) *now*. A
+    single legitimate-looking comment does not override the
+    budget — if it exits 1, do not push a fix for it, go
+    to Step 8d instead and list it as unresolved. Only once it exits 0:
+    fix the code, commit, push (that call already recorded the Step 8a
+    iteration), then reply on that thread naming what changed and resolve it.
+    Loop back to Step 8b — a new
+    pipeline run and a fresh review pass both follow from the push.
+  - **Not valid** → reply on the thread with the concrete reason it doesn't
+    apply (cite the code, not just an opinion — and note the reply body
+    cannot start a line with `/`, which GitLab reads as a quick action), then
+    resolve the discussion. Never resolve a thread silently — always reply
+    first. This does not count as a Step 8a iteration (no push happened), so
+    do not call `iteration` for it.
+
+  Reply and resolve, passing the **full** `id=` from the listing above (both
+  commands also accept an 8+ character prefix, but a prefix can be ambiguous
+  and then errors — use the full id programmatically and keep the short form
+  for what you show the developer):
+
+  ```bash
+  glab mr note create {iid} --reply {discussion-id} -m "{reply text}"
+  glab mr note resolve {iid} {discussion-id}
+  ```
+
+  Same experimental caveat as the listing command. Argument order is
+  MR first, discussion second, as above. Fallback (non-experimental) — the raw
+  `POST .../discussions/{id}/notes` then `PUT .../discussions/{id} -F resolved=true`
+  calls in `references/glab.md`, or MCP `save_merge_request_review` with
+  `method: "reply_discussion"` then `"resolve_discussion"` per
+  `references/mcp.md`. Reply-before-resolve holds on every path.
+- **No unresolved review-agent threads left** (and the "just pushed" check
+  above is satisfied where it applies): go to Step 8e.
+
+### Step 8d — Stop and hand off
+
+Reached whenever either is true — stop looping the moment either fires, don't
+keep polling to "make sure":
+
+- **Budget exhausted**: any one of Step 8a's three limbs (6 iterations, 45
+  minutes, 40 polls) is hit before Step 8e's condition holds.
+- **Nothing left to push at**: the loop hits a state no further code push can
+  resolve — a pipeline still `canceled` after 8b's one re-poll for the
+  current HEAD, or a reopened/duplicate finding (8c, after finishing that
+  poll's pass over any other, actually-new threads). Do not wait out the
+  rest of the budget once this is confirmed.
+
+Report, without claiming the task is done:
+
+- Current pipeline status (and which job(s) are still failing, if any).
+- Every review-agent thread still unresolved, with your assessment of each
+  (fix attempted and still failing / genuinely needs a human call / agent
+  never appeared / reopened after an earlier fix — see 8c).
+- Any human comments the loop left untouched (Step 8c).
+- Which limb ended the loop (iterations / clock / poll count / unresolvable
+  state), so whoever picks this up knows whether retrying is even likely to
+  help. Run `sh {budget} status {project-id}-{iid}` and quote its line — it
+  reports the final counters and names the blown limb(s), and never modifies
+  anything (it always exits 0, even over budget).
+- **Where the time went**, straight from that same `status` line: `polling`
+  vs `remediation` vs `since-last` (Step 8a). Say it in words, not just as raw
+  seconds — e.g. "45min budget spent: ~9min polling (3 checks at 180s), ~33min
+  on the failed `lint` job and waiting for your answer on the CVE, ~3min since
+  the last check", or "~42min of it was polling a pipeline that never left
+  `waiting_for_resource`". These two read completely differently to whoever
+  picks the MR up: a clock burned on remediation means the loop was working
+  and a retry may finish the job, while a clock burned on polling means
+  nothing was moving and a retry will likely stall the same way. A bare
+  `elapsed 2700s/2700s | poll 15/40` hides that distinction and reads as if
+  the loop wasted its budget on slow polling.
+
+This is a handoff, not a failure to hide.
+
+### Step 8e — Convergence, command complete
+
+Both hold, true at the same time, on the current HEAD: latest pipeline green or gate-less per
+Step 8b, zero unresolved review-agent discussion threads. Report completion —
+pipeline status, what (if anything) got fixed along the way (quote
+`sh {budget} status {project-id}-{iid}` for the poll/iteration count and the
+`polling` / `remediation` / `since-last` split, and read the split out in
+words so the elapsed time is attributed rather than left looking like slow
+polling), and that the human Approve slot of `MR-APPROVALS` is still
+outstanding (this command does not wait for or chase that). Only now is
+`/umo-jira-tracker:mr` finished.
 
 ---
 

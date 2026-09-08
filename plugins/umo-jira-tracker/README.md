@@ -37,7 +37,7 @@ FLOW (level 2, the unit of value and cost)
 | `/umo-jira-tracker:work [KEY\|bead-id\|--ready]`                              | Claim a bead, discuss AC with AI, push refinements back to JIRA                                |
 | `/umo-jira-tracker:create task\|bug --parent <SLICE-KEY>`                     | Create a JIRA Task or Bug under a Slice                                                        |
 | `/umo-jira-tracker:commit`                                                    | Group staged changes into conventional commits, generate MR description                        |
-| `/umo-jira-tracker:mr`                                                        | Create a GitLab MR and sync JIRA (comment + description)                                       |
+| `/umo-jira-tracker:mr`                                                        | Create a GitLab MR, sync JIRA (comment + description), then offer to watch CI + the review agent and fix valid findings until both are clean (Phase 8 — opt-in, asked per MR) |
 | `/umo-jira-tracker:close [bead-id]`                                           | Close the bead and transition JIRA                                                             |
 
 ## Skills

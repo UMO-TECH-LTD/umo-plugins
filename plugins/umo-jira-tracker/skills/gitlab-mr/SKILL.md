@@ -1,13 +1,13 @@
 ---
 name: gitlab-mr
-description: Lower-level reference skill for creating GitLab merge requests. Covers glab CLI (preferred) and GitLab MCP (when available). Used by commands/mr.md. Also usable standalone when MCP is unavailable or fails.
+description: Lower-level reference skill for creating GitLab merge requests, and for polling their pipeline/review status afterward. Covers glab CLI (preferred) and GitLab MCP (when available), plus scripts/phase8-budget.sh which enforces the Phase 8 loop budget. Used by commands/mr.md, including its Phase 8 wait-for-CI-and-review loop. Also usable standalone when MCP is unavailable or fails.
 ---
 
 # GitLab Merge Requests via glab (MCP fallback)
 
 > **Do not call this skill directly to create an MR.**
 > MR creation must always go through the `/umo-jira-tracker:mr` command flow (`commands/umo-jira-tracker:mr.md`), which handles branch setup, commit planning, full preview, assignee, description template, and JIRA sync.
-> This skill is invoked **only** from Phase 6 of that command as the glab fallback when GitLab MCP is unavailable. Using it outside of that flow produces MRs with wrong title format, missing assignee, and no JIRA update.
+> This skill is invoked from Phase 6 of that command as the glab fallback when GitLab MCP is unavailable, and again from Phase 8 — which the developer opts into per MR — for pipeline/discussion polling and fixes on the already-created MR. Using it outside of that flow produces MRs with wrong title format, missing assignee, and no JIRA update.
 
 Use when the GitLab MCP is unavailable or fails, and the `/umo-jira-tracker:mr` command flow has already reached Phase 6. Also used by `/umo-jira-tracker:mr` as the **preferred CLI fallback** after MCP.
 
@@ -24,8 +24,12 @@ Use when the GitLab MCP is unavailable or fails, and the `/umo-jira-tracker:mr` 
 - [glab](https://gitlab.com/gitlab-org/cli) installed (`glab version`).
 - Authenticated: `glab auth login` (or `GITLAB_TOKEN` / `GITLAB_ACCESS_TOKEN` with `api` scope).
 
-See `references/glab.md` for install, auth, and troubleshooting details.
+See `references/glab.md` for install, auth, and troubleshooting details, plus
+the Phase 8 polling commands and the tooling gate.
 See `references/mcp.md` for GitLab MCP setup and `create_merge_request` usage.
+See `scripts/phase8-budget.sh` (POSIX `sh`, no dependencies) for the Phase 8
+loop-budget counter — `poll` / `iteration` / `status` / `reset`, interface
+documented in `references/glab.md`.
 
 ## Resolve project
 
