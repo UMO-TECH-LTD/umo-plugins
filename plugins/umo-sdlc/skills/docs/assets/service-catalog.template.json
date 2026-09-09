@@ -39,5 +39,6 @@
   "agent": {
     "readNext": [],
     "sharpEdges": []
-  }
+  },
+  "errors": {}
 }

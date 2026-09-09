@@ -190,6 +190,13 @@
         }
       },
       "additionalProperties": true
+    },
+    "errors": {
+      "type": "object",
+      "description": "Generated projection of reasons declared in service code (ADR 0016). Empty object means none yet. Omitted means the collector has not run. Domain is metadata.name, not a per-reason field. Never hand-edit.",
+      "additionalProperties": {
+        "$ref": "#/$defs/errorReason"
+      }
     }
   },
   "$defs": {
@@ -232,6 +239,32 @@
           "required": ["service"]
         }
       ],
+      "additionalProperties": true
+    },
+    "errorReason": {
+      "type": "object",
+      "description": "One enumerable reason.",
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "description": "UPPER_SNAKE_CASE identity unique within the service"
+        },
+        "message": {
+          "type": "string",
+          "description": "Operator diagnostic (reason_message). Not customer copy."
+        },
+        "grpcStatus": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
       "additionalProperties": true
     }
   },
