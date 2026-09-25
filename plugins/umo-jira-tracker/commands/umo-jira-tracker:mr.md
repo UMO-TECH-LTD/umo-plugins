@@ -869,7 +869,11 @@ pipelines rather than branch pipelines): the raw
   `waiting_for_resource`) is exactly the case those limbs exist to catch —
   once either is hit, stop and go to Step 8d, do not keep waiting for it to
   resolve on its own.
-- **`success`**: move to Step 8c.
+- **`success`**: move to Step 8c only when this pipeline's `sha` equals
+  `git rev-parse HEAD` on the MR branch. A green pipeline for an older SHA
+  does not count — wait one poll interval for the pipeline of the commit you
+  pushed. The MR pipeline list is newest-first; match `sha`, do not take the
+  first `success`.
 - **`failed`**: fetch the failing job(s) and their logs — the same
   `glab ci status` call already carries the job list, so this needs no extra
   JSON tooling either:
@@ -913,6 +917,16 @@ pipelines rather than branch pipelines): the raw
 Only once the pipeline is green or gate-less (8b). Every listing here is a
 poll — run `sh {budget} poll {project-id}-{iid}` (Step 8a) first and stop for
 Step 8d if it exits 1.
+
+**Living summary note.** `saas-mr-reviewer` keeps one note whose body starts
+with `### saas-mr-reviewer · run <UTC time>`. Each run **rewrites that note**
+(`updatedAt` and the `run` timestamp change; `createdAt` stays on the first
+run). Read the note by `updatedAt` and the `run` time inside the body. A run
+older than the current HEAD push is not this commit's review. Stop for a
+clean review only when that run is after the push, the recommendation is
+approve, and it posts no new inline findings. Do not create a second summary
+note, and do not resolve the bot's own threads — it resolves findings that
+no longer reproduce.
 
 **First, once per Phase 8 run: identify the review agent.** You cannot apply
 the human-comment exclusion without knowing which author is the bot. The
