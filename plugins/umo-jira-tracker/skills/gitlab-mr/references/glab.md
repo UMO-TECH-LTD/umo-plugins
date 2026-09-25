@@ -251,7 +251,8 @@ pipelines, so the two disagree):
 glab api "projects/{project-id}/merge_requests/{iid}/pipelines"
 ```
 
-That returns a JSON array, newest first — read `[0].status`. Note that
+That returns a JSON array, newest first. Use the row whose `sha` equals
+`git rev-parse HEAD`, not the first `success`. Note that
 `glab api` has **no** `--jq` flag, so this fallback path needs an external
 `jq` (`glab api ... | jq -r '.[0].status'`) or `python3` to extract a field,
 unlike the primary native-command path above, which needs neither.

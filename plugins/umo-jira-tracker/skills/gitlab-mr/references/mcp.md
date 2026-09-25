@@ -143,11 +143,14 @@ CallMcpTool -> gitlab / get_merge_request
   include: ["pipelines"]
 ```
 
-Read the latest pipeline's `status`. `none` (no pipeline) or `skipped` → no CI
-gate to wait on, go straight to discussions (below). In-flight
+Read the pipeline whose `sha` equals the MR head (`git rev-parse HEAD`), not
+the first `success` in the list. The list is newest-first, but an older green
+row must not end the wait. No row for that SHA yet → wait one 180s poll
+interval and check again (a push may not have created the pipeline).
+`skipped` → no CI gate, go straight to discussions. In-flight
 (`created`/`waiting_for_resource`/`preparing`/`pending`/`running`/`scheduled`)
-→ wait one 180s poll interval, then poll again. `success` → move to
-discussions.
+→ wait one 180s poll interval, then poll again. `success` on **that SHA** →
+move to discussions.
 `canceled` → usually just the stale run GitLab auto-cancelled when Phase 8's
 own fix push superseded it: re-poll **once** for the current HEAD's pipeline
 and follow that if it exists; only if `canceled` is still the latest after
@@ -182,6 +185,12 @@ CallMcpTool -> gitlab / get_merge_request
   url: "<mr-url>"
   include: ["discussions"]
 ```
+
+`saas-mr-reviewer` rewrites one summary note in place (`### saas-mr-reviewer ·
+run <UTC time>`). Judge that note by `updatedAt` and the `run` time in the
+body, not `createdAt`. A review older than the current HEAD push is not this
+commit's review. Do not post a second summary, and do not resolve the bot's
+threads.
 
 Each discussion carries an `id` (pass as `discussion_id` below — accepts
 either the bare id or the full `gid://gitlab/Discussion/<id>` form) and a
