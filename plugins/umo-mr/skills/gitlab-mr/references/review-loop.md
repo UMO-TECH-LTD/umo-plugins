@@ -43,6 +43,13 @@ and the MR has never had a `-mr-reviewer` note, the repo has none: drop
 conditions 3 and 4, do not post `/code-review`, and say "no review agent on
 this repo" in the report.
 
+Not every repo has CI. When the project's `builds_access_level` is `disabled`,
+or the CI config file (`ci_config_path`, or `.gitlab-ci.yml` when that is
+empty) is absent at the head SHA, the repo has none: drop condition 2, and
+say "no CI on this repo" in the report together with the local checks that
+were run. A remote CI config (an `@` or an `http` URL in `ci_config_path`)
+still counts as CI.
+
 ## One check
 
 Run one check, then wait 180 seconds before the next one. Use `glab` from the
