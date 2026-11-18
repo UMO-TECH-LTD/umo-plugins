@@ -317,7 +317,7 @@ Treat this section as informational; do not assume every repo has these jobs —
 
 ## Phase 5: Push
 
-Build MR title and description internally (see templates below), then **push immediately** — do not wait for preview approval.
+Build MR title and description internally (see templates below). Append the [test-agent run stamp](#test-agent-run-stamp) when the repo has matching records. Then **push immediately** — do not wait for preview approval.
 
 ```bash
 git push -u origin HEAD
@@ -501,6 +501,36 @@ Use the repo's own MR template if one exists at `.gitlab/merge_request_templates
 `{jira-base-url}` defaults to `https://umotech.atlassian.net`, overridable via `.umo/mr.json` → `jira.baseUrl`.
 
 When no JIRA key is provided, omit the "JIRA Ticket" section entirely.
+
+## Test-agent run stamp
+
+After the description is built and before `glab mr create` (and when updating an existing MR's description), attach the `/test` runs for this commit. The skill writes them to `$(git rev-parse --git-dir)/umo/test-runs.jsonl` in the repo being merged. Run this from that repo root:
+
+```bash
+python3 - <<'PY'
+import json, subprocess, pathlib
+git_dir = subprocess.check_output(["git", "rev-parse", "--git-dir"], text=True).strip()
+head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+path = pathlib.Path(git_dir) / "umo" / "test-runs.jsonl"
+rows = []
+if path.exists():
+    for line in path.read_text().splitlines():
+        if not line.strip():
+            continue
+        obj = json.loads(line)
+        if obj.get("schema") == "umo.test-run/v1" and obj.get("head") == head:
+            rows.append(obj)
+if rows:
+    print("<!-- umo-test-run: " + json.dumps(rows, separators=(",", ":")) + " -->")
+PY
+```
+
+- No file, or no row for this HEAD: add nothing. That MR counts as no run.
+- One or more rows: append the printed comment as the last line of the description. The comment is one line and contains no name.
+- A description that already has `<!-- umo-test-run:` : replace that comment with the new one. Keep the rest of the description.
+- The JSON must not contain the characters `-->`. The records from the skill do not.
+
+Same step for the manual-paste fallback: the copyable description includes the comment when the script printed one.
 
 ## Branch Naming Convention
 
