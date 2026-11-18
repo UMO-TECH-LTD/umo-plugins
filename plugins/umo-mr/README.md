@@ -11,18 +11,20 @@ Conventions are ported from the UMO `saas` repo's `/mr` workflow — trunk-based
 - **Auto branch heuristic:** on target/protected branches always create a short-lived feature branch; otherwise reuse the current feature branch (no open MR = developer-created; open MR = update that MR). Explicit reuse/rename/new overrides win when clear.
 - **Immediate execute:** when the developer asks for commits or an MR, commit/push/create without a preview approval gate. JIRA mutations still require explicit approval.
 - **`glab`-first MR creation:** creates the MR via the `glab` CLI by default, falling back to GitLab MCP only when `glab` is missing, unauthenticated, or fails (configurable via `gitlab.mrTool`).
+- **Waits for CI and the review agent (Phase 8):** after creating the MR, `/mr` watches the pipeline and the review agent on the pushed commit, fixes valid findings, answers the rest with evidence in their threads, and ends with a report. It runs without asking; say "just open it" to skip. Procedure: `skills/gitlab-mr/references/review-loop.md`. It never merges and never fills the human Approve slot.
+- **Hook for MRs opened outside `/mr`:** a `postToolUse` hook (`hooks/mr-created.sh`; Cursor via `hooks/cursor-hooks.json`, Claude Code via `hooks/hooks.json`) notices `glab mr create` or a GitLab MCP create/save merge request call and tells the agent to run the same loop. Needs `jq` on `PATH`; without it the hook does nothing.
 
 ## Slash command
 
 | Command | Purpose |
 |---------|---------|
-| `/mr` | Parse intent, manage branches, commit, push, create the MR immediately, optionally sync JIRA |
+| `/mr` | Parse intent, manage branches, commit, push, create the MR immediately, optionally sync JIRA, then wait for CI and the review agent and work through their findings |
 
 ## Skill
 
 | Skill | Purpose |
 |-------|---------|
-| `gitlab-mr` | glab CLI / GitLab MCP reference for MR creation, invoked only from `/mr` Phase 6 |
+| `gitlab-mr` | glab CLI / GitLab MCP reference for MR creation (`/mr` Phase 6) and the review loop (`/mr` Phase 8) |
 
 ## Prerequisites
 

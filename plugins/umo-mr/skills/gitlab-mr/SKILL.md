@@ -1,13 +1,13 @@
 ---
 name: gitlab-mr
-description: Lower-level reference skill for creating GitLab merge requests. Covers glab CLI (preferred/default) and GitLab MCP (fallback when glab is unavailable or fails). Used by commands/mr.md. Also usable standalone when glab is unavailable.
+description: Lower-level reference skill for creating GitLab merge requests and for the review loop after them (CI + review agent, references/review-loop.md). Covers glab CLI (preferred/default) and GitLab MCP (fallback). Used by commands/mr.md.
 ---
 
 # GitLab Merge Requests via glab (preferred), GitLab MCP fallback
 
 > **Do not call this skill directly to create an MR.**
 > MR creation must always go through the `/mr` command flow (`commands/mr.md`), which handles branch setup, commit planning, push, create, and optional JIRA sync.
-> This skill is invoked **only** from Phase 6 of that command — as the primary glab-based path, or as the reference for the GitLab MCP fallback call. Using it outside of that flow can produce MRs with the wrong title format or incomplete branch/commit handling.
+> This skill is invoked **only** from Phase 6 of that command — as the primary glab-based path, or as the reference for the GitLab MCP fallback call — and from Phase 8 for the review loop. Using it outside of that flow can produce MRs with the wrong title format or incomplete branch/commit handling.
 
 ## Naming & squash rules (UMO defaults, trunk-based development)
 
@@ -131,6 +131,14 @@ CallMcpTool -> GitLab / search
 ```
 
 See `references/mcp.md` for the full call shapes and `references/glab.md` for extended glab flag reference.
+
+## After creation: review loop
+
+`/mr` Phase 8 follows [`references/review-loop.md`](references/review-loop.md):
+wait for the pipeline and the review agent on the pushed head SHA, triage the
+findings, push fixes, and report. The plugin's `postToolUse` hook
+(`hooks/mr-created.sh`) points the agent at the same loop when an MR is created
+outside `/mr`.
 
 ## Relationship to `/mr` command
 

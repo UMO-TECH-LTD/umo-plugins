@@ -13,6 +13,8 @@ alwaysApply: true
 
 Invoking the `gitlab-mr` skill directly, outside of `/mr` Phase 6, can produce MRs with the wrong title format or incomplete branch/commit handling — always go through `/mr`.
 
+**Opening the MR is not the end.** `/mr` Phase 8 then waits for the pipeline and the review agent on the pushed commit, fixes valid findings and answers the rest with evidence ([`review-loop.md`](../skills/gitlab-mr/references/review-loop.md)). It runs without asking; skip it only when the developer said so. If an MR was created any other way, the plugin hook reminds you to run the same loop — do it before reporting the work done.
+
 ## Conventions summary (defaults, overridable via `.umo/mr.json`)
 
 - **Branch strategy:** auto — on target/protected (`main`/`master`/`dev`/`{target-branch}`) always create `{type}/{JIRA-KEY}-{short-description}` (or without ticket); otherwise reuse the current feature branch (no open MR = developer-created branch; open MR = update that MR). Explicit reuse/rename/new overrides win when clear. Types: `feat`, `fix`, `refactor`, `chore`, `test`, `docs`, `ci`, `perf`, `build`.
