@@ -1,12 +1,12 @@
 ---
-description: End-to-end MR workflow — parse intent, autodetect the default branch, auto-choose branch via protected-branch + open-MR heuristic, organize changes into logical conventional commits, push and create a GitLab MR immediately, and optionally sync JIRA. Uses glab (preferred) or GitLab MCP (fallback). Applies trunk-based, squash-merge, commitlint-safe conventions by default, overridable per repo via .umo/mr.json. Invoke this command whenever the developer asks to create, open, or push a merge request, or whenever you decide finished work should become one. Ported from the UMO saas repo /mr workflow.
+description: End-to-end MR workflow — parse intent, autodetect the default branch, auto-choose branch via protected-branch + open-MR heuristic, organize changes into logical conventional commits, push and create a GitLab MR immediately, optionally sync JIRA, then wait for CI and the review agent and fix or answer their findings (Phase 8). Uses glab (preferred) or GitLab MCP (fallback). Applies trunk-based, squash-merge, commitlint-safe conventions by default, overridable per repo via .umo/mr.json. Invoke this command whenever the developer asks to create, open, or push a merge request, or whenever you decide finished work should become one. Ported from the UMO saas repo /mr workflow.
 ---
 
 # /mr
 
 ## Overview
 
-End-to-end MR workflow: parse intent from natural language, autodetect the repo's default branch, choose the source branch via the Phase 2 heuristic (or explicit developer override), organize changes into logical conventional commits, **push and create a GitLab MR immediately**, and optionally link a JIRA ticket. Do **not** wait for a commit-plan or MR-preview approval — the developer's request to create commits or an MR is the approval.
+End-to-end MR workflow: parse intent from natural language, autodetect the repo's default branch, choose the source branch via the Phase 2 heuristic (or explicit developer override), organize changes into logical conventional commits, **push and create a GitLab MR immediately**, optionally link a JIRA ticket, then **wait for CI and the review agent and work through their findings** (Phase 8). Do **not** wait for a commit-plan or MR-preview approval — the developer's request to create commits or an MR is the approval, and it covers Phase 8 too.
 
 **Use this command whenever the developer asks to create/open/push a merge request or PR, or whenever you determine that completed work is ready to ship as one.** It is the org-default entry point for MR creation — never call `glab mr create` or a GitLab MCP `create_merge_request` tool directly outside of this flow.
 
@@ -423,6 +423,23 @@ CallMcpTool -> Atlassian / transitionJiraIssue
 
 If the developer declines the JIRA update, skip it.
 
+## Phase 8: Converge on CI and the review agent
+
+This phase runs on its own after Phase 6 (and Phase 7, when it ran). Do not
+ask whether to run it: the developer's request to open the MR covers it. Skip
+it only when the developer said so in the request ("just open the MR", "don't
+wait for CI").
+
+Follow [`review-loop.md`](../skills/gitlab-mr/references/review-loop.md) from
+the `gitlab-mr` skill: wait for the pipeline on the pushed head SHA and for the
+review agent's note on that SHA, triage each finding (fix what is valid, reply
+with evidence to what is not), and push fixes until it converges or the budget
+runs out.
+
+The command is done only when that loop has converged or handed off, with its
+report. Opening the MR is not the end of the command. The loop never merges
+the MR and never fills the human Approve slot.
+
 ---
 
 ## Squash merge & release
@@ -571,4 +588,12 @@ or
 create an MR for this
 ```
 
-Parsed: branch strategy = auto (Phase 2 heuristic), target = autodetected default branch. Agent commits, pushes, and creates/updates the MR without preview gates.
+Parsed: branch strategy = auto (Phase 2 heuristic), target = autodetected default branch. Agent commits, pushes, and creates/updates the MR without preview gates, then runs Phase 8.
+
+**Open without waiting:**
+
+```
+/mr just open it, don't wait for CI
+```
+
+Phases 1–7 as usual; Phase 8 is skipped and the report says CI and the review agent were not watched.

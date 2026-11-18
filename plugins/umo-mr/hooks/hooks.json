@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|mcp__.*merge_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/mr-created.sh\" claude",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

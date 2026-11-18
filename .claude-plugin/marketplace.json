@@ -11,7 +11,7 @@
       "name": "umo-mr",
       "source": "./plugins/umo-mr",
       "description": "UMO MR — org-default /mr command for creating GitLab merge requests: autodetects the default branch, always creates a new branch, conventional commits, preview, push, MR creation (glab preferred, GitLab MCP fallback), and optional JIRA sync.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "UMO Platform Team"
       },

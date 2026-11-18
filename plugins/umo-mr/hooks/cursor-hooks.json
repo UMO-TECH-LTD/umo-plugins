@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "postToolUse": [
+      {
+        "command": "bash ./hooks/mr-created.sh cursor",
+        "matcher": "Shell|merge_request",
+        "timeout": 5
+      }
+    ]
+  }
+}
