@@ -323,7 +323,7 @@ If there are zero commits ahead of the target, warn the developer: "No commits t
 
 ## Phase 5: Push
 
-Build MR title and description internally (see templates below), then **push immediately** — do not wait for preview approval.
+Build MR title and description internally (see templates below). Append the [test-agent run stamp](#test-agent-run-stamp) when the repo has matching records. Then **push immediately** — do not wait for preview approval.
 
 ```bash
 git push -u origin HEAD
@@ -1205,6 +1205,16 @@ There is no keyless form. See Phase 1c.
 ```
 
 Omit the slice link from the JIRA Task line if the Task's parent could not be resolved.
+
+## Test-agent run stamp
+
+After the description is built and before the MR is created or its description is updated, append the `/test` runs for the commit being pushed. Same rule as the umo-mr command: from the repo root, read `$(git rev-parse --git-dir)/umo/test-runs.jsonl`, keep objects with `schema` `umo.test-run/v1` whose `head` equals `git rev-parse HEAD`, and append one line:
+
+```text
+<!-- umo-test-run: [<those objects, compact JSON>] -->
+```
+
+No matching row: add nothing. An existing `<!-- umo-test-run:` comment is replaced. The comment stays one line and contains no name. The JSON must not contain `-->`.
 
 ## Branch Naming Convention
 
